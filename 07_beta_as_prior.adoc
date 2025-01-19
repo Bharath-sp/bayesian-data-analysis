@@ -1,0 +1,206 @@
+= Beta as Prior =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+Beta distribution that is parameterized by two shape constants stem:[a] and stem:[b] does the job nicely for expressing our prior beliefs concerning stem:[p].
+
+When we model the prior distribution over Bernoulli parameter stem:[p], it is good to consider the beta distribution because the beta distribution has a functional form similar to that of likelihood (in terms of the parameter) and therefore it is easier to compute the posterior distribution in a closed form. Such distributions having similar functional form to that of likelihood are called conjugates of the likelihood.
+
+== Conjugate Prior ==
+We can set stem:[\theta \sim \mathrm{Beta}(a, b)] as a prior to reflect how biased we think the coin is apriori to flipping it. This is a subjective judgment that represent stem:[a+b- 2] "imaginary" trials with stem:[a-1] heads and stem:[b-1] tails. What is our posterior belief about stem:[\theta] after observing stem:[n] heads and stem:[m] tails, stem:[f(\theta=\theta_r \,|\, X=n)]?
+
+[stem]
+++++
+\begin{align*}
+\\
+    f(& \theta=\theta_r \,|\,X=n) \\
+&=  \frac{P(X=n|\theta=\theta_r)f(\theta=\theta_r)}{P(X=n)} && \text{Bayes Theorem}\\
+&= \frac{ { {n+m} \choose n} {\theta_r}^n(1-\theta_r)^m \cdot \frac{1}{c} \cdot {\theta_r}^{a-1}(1-\theta_r)^{b-1} } {P(X=n)} && \text{Binomial PMF, Beta PDF}\\
+&= K \cdot {\theta_r}^n(1-\theta_r)^m \cdot  {\theta_r}^{a-1}(1-\theta_r)^{b-1} && \text{Combine Constants}\\
+&= K \cdot {\theta_r}^{a+n-1}(1-\theta_r)^{b+m-1} && \text{Combine Like Bases}\\
+\end{align*}
+++++
+
+NOTE: By constant, we mean those quantities that don't change as we change stem:[\theta].
+
+Which is the PDF of stem:[\mathrm{Beta}(a+n, b+m)]. So stem:[\theta|X] also follows a beta distribution. It is pretty convenient that if we have a Beta prior belief, then our posterior belief is also Beta. This property where the type of distribution of the random variable is the same before and after an observation is called a *conjugate prior* (i.e.,) the prior and the posterior follow the same type of distribution (but with different parameter values).
+
+Conjugate priors simplifies the process of updating beliefs as we get new data. Here we just have to add number of heads and tails seen to our initial beta parameters.
+
+== Conjugacy in General ==
+It is often not possible to compute the posterior distribution analytically. Conjugacy is computationally convenient because we can algebraically calculate our posterior distribution by updating the parameters of the prior distribution. A prior distribution is called "conjugate" to a likelihood function if the resulting posterior distribution is of the same family (form/type) as the prior distribution.
+
+The term "conjugate" comes from the fact that the prior and posterior distributions are "linked" in a convenient way. The algebraic form of the prior is maintained after incorporating the likelihood, leading to a posterior distribution of the same form. This "linkage" is similar to conjugation in algebra, where certain operations preserve specific structures.
+
+=== Beta-Binomial Conjugacy ===
+Consider a Binomial random variable stem:[X \sim \mathrm{Bin}(N,p)] where stem:[N=n+m] with stem:[n] successess and stem:[m] failures,
+
+[stem]
+++++
+P(X=n \,|\, N,p ) = { {n+m} \choose n} p^n(1-p)^m, n=0,1,\dots, N
+++++
+
+is the probability of finding stem:[n] times the outcome heads in stem:[n+m] coin flips, where stem:[p] is the probability of observing head in a single experiment. We place a beta prior on the parameter stem:[p], that is, stem:[p=\theta \sim \mathrm{Beta}(a, b)], where
+
+[stem]
+++++
+\begin{align*}
+    f(\theta=\theta_r \,|\, a,b) =
+    \begin{cases}
+    \frac{1}{B(a,b)}{\theta_r}^{a-1}(1-\theta_r)^{b-1} &\mbox{if } 0 \leq \theta_r \leq 1 \\
+    0 & \mbox{otherwise}
+    \end{cases}
+   &&\mbox{where } B(a,b) =  \int_0^1 {\theta_r}^{a-1}(1-\theta_r)^{b-1} d\theta_r
+\end{align*}
+++++
+
+If we now observe some data stem:[X=n], that is, we see stem:[n] heads in stem:[n+m] coin flips, we compute the posterior distribution on stem:[\theta] as:
+
+[stem]
+++++
+\begin{align*}
+f(\theta=\theta_r\,|\, a,b, n, n+m) & \propto P(X=n \,|\, n+m, \theta_r) f(\theta=\theta_r \,|\, a,b) \\
+& \propto {\theta_r}^n(1-\theta_r)^m \cdot {\theta_r}^{a-1}(1-\theta_r)^{b-1} \\
+& = {\theta_r}^{n+a-1} (1-\theta_r)^{m+b-1} \\
+& \propto \mathrm{Beta}(a+n, b+m)
+\end{align*}
+++++
+
+The posterior distribution is a Beta distribution as the prior. The Beta distribution is a conjugate prior for the parameter stem:[p] in the Binomial likelihood function. We can also say that Beta is a conjugate distribution for Binomial.
+
+=== Beta-Bernoulli Conjugacy ===
+Consider a Bernoulli random variable stem:[X \sim \mathrm{Ber}(p)] which has a PMF,
+
+[stem]
+++++
+P(X=x \,|\, p) = \begin{cases}
+p & \text{if } x =1\\
+1-p & \text{if } x =0
+\end{cases}
+++++
+
+This expression can also be written in continuous form as stem:[P(X=x \,|\, p) = p^{x} (1-p)^{1-x}]. We place a beta prior on the parameter stem:[p], that is, stem:[p=\theta \sim \mathrm{Beta}(a, b)].
+
+[stem]
+++++
+\begin{align*}
+    f(\theta=\theta_r \,|\, a,b) =
+    \begin{cases}
+    \frac{1}{B(a,b)}{\theta_r}^{a-1}(1-\theta_r)^{b-1} &\mbox{if } 0 \leq \theta_r \leq 1 \\
+    0 & \mbox{otherwise}
+    \end{cases}
+   &&\mbox{where } B(a,b) =  \int_0^1 {\theta_r}^{a-1}(1-\theta_r)^{b-1} d\theta_r
+\end{align*}
+++++
+
+If we now observe some data stem:[X=x], that is, we see either a success or a failure, then we compute the posterior distribution on stem:[\theta] as:
+
+[stem]
+++++
+\begin{align*}
+f(\theta=\theta_r\,|\, a,b,x) & \propto P(X=x \,|\, \theta_r) f(\theta=\theta_r \,|\, a,b) \\
+& \propto {\theta_r}^x(1-\theta_r)^{1-x} \cdot {\theta_r}^{a-1}(1-\theta_r)^{b-1} \\
+& = {\theta_r}^{x+a-1} (1-\theta_r)^{(1-x)+b-1} \\
+& \propto \mathrm{Beta}(a+x, b+(1-x))
+\end{align*}
+++++
+
+The posterior distribution is a Beta distribution as the prior. The Beta distribution is a conjugate prior for the parameter stem:[p] in the Bernoulli likelihood function.
+
+=== Priors for Common Likelihoods ===
+Conjugate priors for common likelihood functions:
+
+[cols="1,1,2"]
+|===
+|Likelihood |Model Parameters |Conjugate Prior (and Posterior) distribution
+
+|Bernoulli |stem:[p] |Beta
+|Binomial with stem:[N] fixed |stem:[p] |Beta
+|Poisson |stem:[\lambda] |Gamma
+|Exponential |stem:[\lambda] |Gamma
+|Univariate Normal with known variance stem:[\sigma^2] |stem:[\mu] |Normal
+|Univariate Normal with known mean stem:[\mu] |stem:[\sigma^2] |Inverse Gamma
+|Multinomial |stem:[\mathbf{p}] - probability vector |Dirichlet
+|===
+
+stem:[\lambda] is the parameter for Poisson, but if we were to turn stem:[\lambda] itself into a random variable, the right format of that random variable's distribution is Gamma.
+
+The distributions used to represent our "prior" belief about a random variable will often have their own parameters. For example, a Beta distribution is defined using two parameters stem:[(a,b)]. Do we have to use parameter estimation to evaluate stem:[a] and stem:[b] too? No. Those parameters are called *hyperparameters*. That is a term we reserve for parameters in our model that we fix before running parameter estimation. 
+
+== Special Priors ==
+There are some priors that are used often.
+
+=== Laplace Smoothing ===
+A prior stem:[\theta \sim \mathrm{Beta}(a=2,b=2)] which represents one imagined heads and one imagined tails has a special name, Laplace Smoothing. People often use this as a prior instead of a uniform distribution. Some philosophical thought on why this is a popular choice,
+
+"To talk about the probability of the sun rising, even though we have seen the sun rise every single day and we believe it will likely happen tomorrow, we want to imagine at least one failure and one success so we can hold in our mind some belief that it might not happen in the future".
+
+We particularly use this prior so that we won't end up with a probability of 0 or 1 whenever we are estimating some probabilities.
+
+=== Uniform is Beta ===
+On deriving the expression for stem:[\mathrm{Beta}(a=1,b=1)]:
+
+[stem]
+++++
+\begin{align*}
+    f(\theta=\theta_r \,|\, 1,1) =
+    \begin{cases}
+    \frac{1}{B(a,b)}{\theta_r}^{a-1}(1-\theta_r)^{b-1} = \frac{1}{\int_0^1 1 d\theta_r} = \frac{1}{\theta_r |^1_0} = 1 &\mbox{if } 0 \leq \theta_r \leq 1 \\
+    0 & \mbox{otherwise}
+    \end{cases}
+\end{align*}
+++++
+
+This is the PDF of continuous uniform distribution. So stem:[\mathrm{Beta}(a=1, b=1) = \mathrm{Uni}(0,1)]. Recall that stem:[\mathrm{Beta}(a=1, b=1)] means 0 imaginary heads and 0 imaginary tails. It is the same as saying we haven't seen any "imaginary" trials, so apriori we know nothing about the coin, so all probabilities are equally likely.
+
+== Beta Examples ==
+
+=== Example 01: Drug ===
+
+Before being tested, a medicine is believed to work about 80% of the time. The medicine is tried on 20 patients. It works for 14 and doesn't work for 6. What is your new belief that the drug works?
+
+*Frequentist Approach:* Here we have no means to incorporate that 80%, but based on the real trials stem:[p \approx \frac{14}{20} = 0.7]. So the probability of being success with the drug is 0.7.
+
+*Bayesian Approach:* Here we model stem:[p=\theta \sim \mathrm{Beta}(?,?)]. The prior is just saying 80%, what should be the value for stem:[a] and stem:[b]? We can take any of the below priors, all of them match the claim:
+
+* stem:[\theta \sim \mathrm{Beta}(81,21)]: 80 successes/ 100 trials.
+* stem:[\theta \sim \mathrm{Beta}(9,3)]: 8 successes/ 10 trials.
+* stem:[\theta \sim \mathrm{Beta}(5,2)]: 4 successes/ 5 trials.
+
+But what is the difference? The first one is very confidence, the second is medium confidence and the third is minimal confidence. We have to make a choice here based on how confident we are with the claim provided. The less we trust, the more the actual observed data will dominate in our posterior belief. Let's go with the last prior.
+
+stem:[\theta \sim \mathrm{Beta}(a=5,b=2)]. We observe 14 successess and 6 failures. So our posterior belief is stem:[\theta\,|\,D \sim \mathrm{Beta}(a=19,b=8)].
+
+image::.\images\prior_posterior_beta.png[align='center',900,300]
+
+Expectation of the random variable stem:[\theta|D] is stem:[\mathrm{E}[\theta\,|\,D\] = \frac{a}{a+b} = \frac{19}{19+8} \approx 0.70]. Mode turns out to be 0.72.
+
+=== Example 02: Video Likes ===
+
+Say we are presented with two youtube videos,video A has got 10k likes and 50 dislikes and video B has got 10 likes and no dislikes. Which video are you more likely to like? Going with the frequentist approach to compute the probability, we get:
+
+[stem]
+++++
+\begin{align*}
+\text{For video A: } \mathrm{P}(like) & = \frac{10000}{10050} = 0.995 \\
+\text{For video B: } \mathrm{P}(like) & = \frac{10}{10} = 1
+\end{align*}
+++++
+
+We get an erroneous result that video B is the movie that we are more likely to like.
+
+*Bayesian Approach:* Here stem:[\theta] is the probability that we like the video. We start with a stem:[\theta \sim \mathrm{Beta}(2,2)] prior over probability, and 
+
+* For video A, we have observed 10k successess and 50 failures in a total of 10,050 trials. Plug in and the posterior is stem:[\mathrm{Beta}(10002,52)].
+* For video B, we have observed 10 successess and 0 failures in a total of 10 trials. Plug in and the posterior is stem:[\mathrm{Beta}(12,2)].
+
+image::.\images\video_likes_dist.png[align='center',900,300]
+
+If we see enough evidence, eventually the beta distribution just looks like a straight line at the true probability. For video B, we haven't seen much information, so we have to hold out the belief it's uncertain over a range.
+
+So given these posterior distributions, how can we decide if one video is better than the other? For each video, we can calculate the probability that the true probability of liking the video is greater than 0.90, stem:[P(\theta>0.90)]. For video A it turns out to be 1, and for video B it is less than 1.

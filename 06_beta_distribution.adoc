@@ -1,0 +1,180 @@
+= Beta Distribution =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Problem Statement ==
+Flip a coin 5 times. If you get heads 3 times you win. Let stem:[X] denotes the number of heads that we get out of 5 trials. Then stem:[X \sim \mathrm{Bin}(5,p)]. The probability of getting 3 heads, stem:[\mathrm{P}(X=3) = \binom{5}{3} \frac{1}{2}^3 \frac{1}{2}^2 = 0.3125 ]. We do this by making the assumption that observing the outcomes heads and tails in a single experiment are equally likely, stem:[p = \mathrm{P}(H) = 0.5 ]. This implicitly implies stem:[\mathrm{P}(T)=0.5]. What if don't know the probability? if the coin is not fair, what is the probability of observing head stem:[p] in a single experiment?
+
+== Frequentist Approach ==
+stem:[p] is a single value. Flip the coin stem:[N = n+m] times, and say we come up with stem:[n] heads, stem:[m] tails.
+
+[stem]
+++++
+p=\lim_{N \to \infty} \frac{n}{n+m} \approx \frac{n}{n+m}
+++++
+
+But what if you cannot observe anymore rolls? And moreover, this just gives us a "point-estimate", it does not have the ability to articulate how uncertain it is.
+
+== Bayesian Approach ==
+The parameter stem:[p] is a random variable, that takes a continuous value in stem:[[0,1\]]. Since it is a random variable, we should represent it with a capital letter. Let's choose stem:[\theta] to represent the probability of observing heads, and it is a continuous random variable, stem:[0 \leq \theta \leq 1].
+
+stem:[\theta] represents stem:[p] in Binomial as a random variable.
+
+Before flipping the coin, we have a belief about the probability of observing heads, stem:[\theta]. We represent it in terms of a probability density function stem:[f(\theta= \theta_r)]. 
+
+NOTE: stem:[\theta] represents a random variable and stem:[\theta_r] is its realization. 
+
+This is often called as *prior*, the reasonable belief before we see any evidence. When we got no information, the best prior belief is that all probabilities look equally likely. So prior is stem:[\theta \sim \mathrm{Uni}(0,1)].
+
+[stem]
+++++
+\begin{align*}
+    f(\theta= \theta_r) = 
+    \begin{cases} 
+    1 &\text{if } 0 \leq \theta_r \leq 1 \\ 
+    0 & \text{otherwise} 
+    \end{cases}  
+\end{align*}
+++++
+
+image::.\images\uniform_prior.png[align='center', 500, 300]
+
+Say we then see the data, we observe 9 heads and 1 tail. Now how does our belief about the random variable stem:[\theta] looks like? We should update our belief, it is very unlikely that all probabilities are equally likely.
+
+[stem]
+++++
+f(\theta=\theta_r \,|\, H=9, T=1)
+++++
+
+We can apply Bayes theorem to find this.
+
+[stem]
+++++
+\begin{align*}
+    f(&\theta = \theta_r|H =9, T=1) \\
+    &=  \frac{P(H =9, T=1|\theta = \theta_r) \cdot f(\theta = \theta_r)}{P(H =9, T=1)} && \text{Bayes Theorem}\\
+    &= \frac{ {10 \choose 9} {\theta_r}^{9} (1-\theta_r)^{1} \cdot f(\theta = \theta_r)}{P(H =9, T=1)} && \text{Binomial PMF}\\
+    &= \frac{ {10 \choose 9} {\theta_r}^{9} (1-\theta_r)^{1} \cdot 1}{P(H =9, T=1)} && \text{Uniform PDF}\\
+    &= \frac{ {10 \choose 9} }{P(H =9, T=1)}  {\theta_r}^{9} (1-\theta_r)^{1} && \text{Constants to front}\\
+    &= K \cdot  {\theta_r}^{9} (1-\theta_r)^{1} && \text{Rename constant}\\
+    \\
+\end{align*}
+++++
+
+Ignoring the constant, let's plot the graph for stem:[\theta^9 (1-\theta)]. Regardless of stem:[K] we will get the same shape, just scaled: On observing the data, our belief about the PDF of stem:[\theta] is updated to:
+
+image::.\images\beta_posterior.png[align='center', 500, 300]
+
+This approach is elegant for two reasons:
+
+. It allows us to incorporate what we know before we start doing any experiments.
+. It gives us a distribution of belief on stem:[\theta] rather than a point estimate of stem:[\theta], which allows us to talk about confidence level.
+
+[TIP]
+====
+In the derivation above for stem:[f(\theta = \theta_r|H =9, T=1)] we made the claim that stem:[P(H =9, T=1)] is a constant. Why is that the case? It may be helpful to compare stem:[P(H =9, T=1)] with stem:[P(H =9, T=1 | \theta = \theta_r)].
+
+* The later says "what is the probability of 9 heads, given the true probability of heads is stem:[\theta_r]".
+* The former says "what is the probability of 9 heads, under all possible assignments of stem:[\theta]".
+
+If we wanted to calculate stem:[P(H =9, T=1)] we could use the law of total probability:
+
+[stem]
+++++
+\begin{align*}
+        P(&H =9, T=1) \\
+        &= \int_{y=0}^{1} P(H =9, T=1 | \theta= y) f(\theta=y) \, dy
+     \end{align*}
+++++
+
+That is a hard number to calculate, but it is in fact a constant with respect to stem:[\theta].
+====
+
+== Generalization ==
+Let's generalize the derivation from the previous section. Let stem:[X=n] be the number of heads in stem:[n+m] coin flips. We want to calculate the PDF stem:[f(\theta = \theta_r | X=n)].
+
+[stem]
+++++
+\begin{align*}
+    f(&\theta = \theta_r|X=n) \\
+&=  \frac{P(X=n|\theta = \theta_r)f(\theta = \theta_r)}{P(X=n)} && \text{Bayes Theorem}\\
+&= \frac{ { {n+m} \choose n} {\theta_r}^n(1-\theta_r)^m}{P(X=n)} && \text{Binomial PMF, Uniform PDF}\\
+&= \frac{ { {n+m} \choose n}}{P(N=n)} {\theta_r}^n(1-\theta_r)^m && \text{Moving terms around}\\
+&= \frac{1}{c} \cdot {\theta_r}^n(1-\theta_r)^m && \text{where } c = \int_0^1 {\theta_r}^n(1-\theta_r)^m d\theta_r
+\end{align*}
+++++
+
+stem:[c] should be that number that makes the whole expression integrate to 1. 
+
+[stem]
+++++
+\int_0^1 \frac{1}{c} {\theta_r}^n(1-\theta_r)^m d\theta_r = 1 \Rightarrow \frac{1}{c} \int_0^1 {\theta_r}^n(1-\theta_r)^m d\theta_r =1
+++++
+
+NOTE: Given stem:[\theta = \theta_r] and coin flips independent: the random variable stem:[(X \,|\, \theta) \sim \mathrm{Bin}(n+m, \theta_r)].
+
+====
+To summarize, if we start with a stem:[\theta \sim \mathrm{Uni}(0,1)] prior over probability, and observe stem:[n] successess and stem:[m] failures. Then our new belief about the probability is:
+
+[stem]
+++++
+f(\theta = \theta_r\,|\, X=n)= \frac{1}{c} \cdot {\theta_r}^n(1-\theta_r)^m \text{ where } c = \int_0^1 {\theta_r}^n(1-\theta_r)^m d\theta_r
+++++
+====
+
+== Beta Distribution ==
+The equation that we arrived at to estimate our probability defines a probability density function and thus a random variable. The random variable is called a *Beta distribution*, and it is defined as follows.
+
+Equivalently to the above argument, if we start with a stem:[\theta \sim \mathrm{Uni}(0,1)] prior over probability, and observe: let stem:[a = \text{ no. of successess} + 1] and stem:[b = \text{ no. of failures} + 1]. Then our new belief about the probability is:
+
+[stem]
+++++
+f_\theta(\theta_r)= \frac{1}{c} \cdot {\theta_r}^{a-1}(1-\theta_r)^{b-1} \text{ where } c = \int_0^1 {\theta_r}^{a-1}(1-\theta_r)^{b-1} d\theta_r
+++++
+
+stem:[\theta] is formally defined as a beta random variable, stem:[\theta \sim \mathrm{Beta}(a,b)] where stem:[a,b >0]:
+
+[stem]
+++++
+\begin{align*}
+    f(\theta=\theta_r) = 
+    \begin{cases} 
+    \frac{1}{B(a,b)}{\theta_r}^{a-1}(1-\theta_r)^{b-1} &\mbox{if } 0 \leq \theta_r \leq 1 \\ 
+    0 & \mbox{otherwise} 
+    \end{cases}  
+   &&\mbox{where } B(a,b) =  \int_0^1 {\theta_r}^{a-1}(1-\theta_r)^{b-1} d\theta_r = \frac{\Gamma(a) \Gamma(b)}{\Gamma(a+b)}
+\end{align*}
+++++
+
+TIP: The reason to use stem:[(a,b)] as the parameter of the distribution rather than stem:[(n,m)] is that to make some complicated things like working with moments of the random variable easier.
+
+The PDF of a beta random variable for different parameter values: They are symmetry when stem:[a=b]. When stem:[a=1, b=1], this becomes uniform distribution on stem:[[0,1\]].
+
+image::.\images\beta_distributions.png[align='center', 700, 400]
+
+A beta distribution has:
+
+[stem]
+++++
+\begin{align*}
+E[\theta] &= \frac{a}{a + b} \\
+\mathrm{Var}(\theta) & = \frac{ab}{(a+b)^2(a+b+1)} \\
+\mathrm{mode}(\theta) & = \frac{a-1}{a+b-2}
+\end{align*}
+++++
+
+Mode gives us the value stem:[\theta_r] which has the highest probability density.
+
+The distribution doesn't have a closed form for the CDF. All modern programming languages have a package for calculating Beta CDFs. 
+
+[IMPORTANT]
+====
+* Beta is the random variable for probabilities. It is used to represent the probability of a outcome for some binary event. For example, stem:[\theta] is a beta random variable representing the probability of observing success in a Bernoullian trial.
+
+* Any parameter for a "parameterized" random variable can be thought of as a random variable.
+====
+

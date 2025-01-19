@@ -1,0 +1,227 @@
+= MAP - Examples =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== MAP for Bernoulli/Binomial ==
+Say a medicine is tried on 20 patients. It works for 14 and doesn't work for 6. What is the belief that the drug works? This problem can be rephrased to:
+
+We observed the following stem:[n] i.i.d samples: stem:[[0,1,0,0, \dots, 1,0\]]. Our model is that every data point has a single value and that value stem:[x_i] is drawn from a Bernoullian distribution, stem:[X_i \sim \mathrm{Ber}(p)]. Find the estimate of stem:[p].
+
+*MLE Approach:*
+
+MLE estimate of this stem:[\theta] gives us a value that maximizes the likelihood of our data (i.e.,) the parameter that make the data look as likely as possible.
+
+[stem]
+++++
+\hat{\theta}_{\text{MLE}} = \underset{\theta}{\mathrm{arg max}}\, f(x_1, x_2, \dots, x_n | \theta)
+++++
+
+We know that the MLE estimate is stem:[\hat{p} = \frac{1}{n} \sum_{i=1}^n x_i = \frac{14}{20} = 0.7]
+
+*MAP Approach:*
+
+The MAP approach chooses the parameters that make the data most likely, it chooses the parameter that are the most likely given the values of the data.
+
+[stem]
+++++
+\hat{\theta}_{\text{MAP}} = \underset{\theta}{\mathrm{arg max}}\, f(\Theta=\theta \,|\, x_1, x_2, \dots, x_n )
+++++
+
+* Step 0:
++
+Probability mass function of stem:[X_i] is 
++
+[stem]
+++++
+P(X_i = x_i \,|\, p) = \begin{cases}
+p & \text{if } x_i=1\\
+(1-p) & \text{if } x_i=0
+\end{cases}
+++++
++
+This expression can also be written in continuous form as stem:[P(X_i=x_i \,|\, p) = p^{x} (1-p)^{1-x}].
+
+* Step 1:
++
+We place a beta prior on the parameter stem:[p], that is, stem:[p=\Theta \sim \mathrm{Beta}(a, b)]. Here we treat stem:[p] as a random variable.
++
+[stem]
+++++
+\begin{align*}
+    f(\Theta=\theta) =
+    \begin{cases}
+    \frac{1}{B(a,b)}\theta^{a-1}(1-\theta)^{b-1} &\mbox{if } 0 \leq \theta \leq 1 \\
+    0 & \mbox{otherwise}
+    \end{cases}
+   &&\mbox{where } B(a,b) =  \int_0^1 \theta^{a-1}(1-\theta)^{b-1} d\theta
+\end{align*}
+++++
++
+stem:[\mathrm{Beta}(a, b)] means that we saw stem:[a+b-2] imaginary trials with stem:[a-1] successes and stem:[b-1] failures.
+
+* Step 2:
++
+We observe the data, we have got 14 successes and 6 failures. Let stem:[X = \sum_i^n X_i] be a random variable representing the number of successes, stem:[X \sim \mathrm{Bin}(N,p)]. Let stem:[n] be the number of successes observed and stem:[m] be the number of failures observed, stem:[N=n+m]. 
++
+[stem]
+++++
+\begin{align*}
+\\
+    f(& \Theta=\theta \,|\,X=n) \\
+&=  \frac{P(X=n|\Theta=\theta)f(\Theta=\theta)}{P(X=n)} && \text{Bayes Theorem}\\
+&= \frac{ { {n+m} \choose n} \theta^n(1-\theta)^m \cdot \frac{1}{B(a,b)} \cdot \theta^{a-1}(1-\theta)^{b-1} } {P(X=n)} && \text{Binomial PMF, Beta PDF}\\
+&= K \cdot \theta^n(1-\theta)^m \cdot  \theta^{a-1}(1-\theta)^{b-1} && \text{Combine Constants}\\
+&= K \cdot \theta^{a+n-1}(1-\theta)^{b+m-1} && \text{Combine Like Bases}\\
+\end{align*}
+++++
++
+This is a beta distribution with parameters stem:[\mathrm{Beta}(a+n, b+m)].
+
+* Step 3:
++
+We know that,
++
+[stem]
+++++
+\hat{\theta}_{\text{MAP}} = \underset{\theta}{\mathrm{arg max}}\, f(\Theta=\theta \,|\, X=n )
+++++
++
+The argument that gives the highest value of the function for Beta distribution is its mode. The mode of the posterior distribution of stem:[p] is the MAP estimate.
++
+[stem]
+++++
+\hat{p}_{\text{MAP}} = \frac{a+n-1}{a+b+n+m-2}
+++++
++
+For Laplace prior stem:[\mathrm{Beta}(2, 2)]:
++
+[stem]
+++++
+\hat{p}_{\text{MAP}} = \frac{n+1}{n+m+2}
+++++
++
+For our case stem:[\hat{p}_{\text{MAP}} = \frac{14+1}{20+2} = 0.681].
+
+== MAP for Poisson stem:[\lambda] ==
+We observed the following stem:[n] i.i.d samples: stem:[[ x_1, x_2, \dots, x_n\]]. Our model is that every data point has a single value and that value stem:[x_i] is drawn from a Poisson distribution, stem:[X_i \sim \mathrm{Poi}(\lambda)]. Find the estimate of stem:[\lambda].
+
+stem:[\lambda] in a Poisson distribution represents average number of successes in a time period.
+
+* Step 1:
++
+We place a prior on the parameter stem:[\lambda], that is, stem:[\lambda =\Theta \sim \mathrm{Gamma}(\alpha, \beta)]. We express our belief in the rate before we see any data. We choose Gamma distribution because it is a conjugate prior for the stem:[\lambda] parameter of the Poisson distribution. 
++
+A Gamma distribution is parameterized by its shape stem:[\alpha] and rate stem:[\beta] parameter. The hyperparameters can be interpreted as: we saw stem:[\alpha-1] total imaginary events during stem:[\beta] imaginary time periods. For example, stem:[\mathrm{Gamma}(11, 5)] means we have observed 10 imaginary events in 5 time periods (i.e.,) observe at Poisson rate of 2 with some degree of confidence.
+
+* Step 2:
++
+Now perform the experiment and we see stem:[n] events during next stem:[k] time periods. Now the posterior distribution of stem:[\Theta] follows stem:[(\Theta | n \text{ events in } k \text{ periods}) \sim \mathrm{Gamma}(\alpha+n, \beta+k)].
+
+* Step 3:
++
+The argument that gives the highest value of the function for Gamma distribution is its mode. The mode of the posterior distribution of stem:[\Theta],
++
+[stem]
+++++
+\hat{\lambda}_{\text{MAP}} = \frac{\alpha+n-1}{\beta + k}
+++++
+
+== MAP for Multinomial ==
+Say we observed the following sample stem:[\textbf{x} = (x_1, x_2, \dots, x_n)] from stem:[n] i.i.d trials. And it is given that stem:[\textbf{x}] is drawn from a Multinomial distribution, stem:[\textbf{X} \sim \mathrm{Multinomial}(n, \textbf{p})].
+
+Multinomial distribution describes the probability of counts for each category in a fixed number of independent trials, where each trial has exactly one of several outcomes. It takes two parameters:
+
+* stem:[n] is the total number of independent trials.
+* Probabilities stem:[\textbf{p} = (p_1, p_2, \dots, p_k)] where each stem:[p_i \in [0,1\]] is the probability of outcome type stem:[i] in one trial. These probabilities must sum to 1.
+
+Say we rolled the die 12 times and observed: stem:[[1,1,1,2,2,4,4,4,5,6,6,6\]]. In our case, stem:[X_1 = 3, X_2 = 2, X_3=0, X_4 = 3, X_5=1, X_6=3]. This gives stem:[\textbf{x} = (3,2,0,3,1,3)]. Find the MAP estimate of stem:[\textbf{p}].
+
+* Step 1:
++
+We place a prior on the parameter stem:[\textbf{p}], that is, stem:[\textbf{p} = \Theta \sim \mathrm{Dirichlet}(a_1, a_2, \dots, a_m)]. We express our belief in the probabilities stem:[p_i] before we see any data. We choose Dirichlet distribution because it is a conjugate prior for the stem:[\textbf{p}] parameter of the Multinomial distribution.
++
+The Dirichlet distribution generalizes Beta in same way Multinomial generalizes Bernoulli. The hyperparameters of Dirichlet distribution stem:[\mathrm{Dirichlet}(a_1, a_2, \dots, a_m)]  can be interpreted as: saw stem:[\sum_{i=1}^m a_i - m] imaginary trials, with stem:[a_i - 1] of outcome stem:[i].
++
+Let's imagine we had rolled the dice six times and had gotten one of each possible values. Thus the prior distribution would be stem:[\mathrm{Dirichlet}(2,2,2,2,2,2)].
+
+* Step 2:
++
+Now perform the experiment and we observe stem:[n_1 + n_2 + \dots + n_m] new trials, with stem:[n_i] of outcome stem:[i]. Now the posterior distribution of stem:[\textbf{p}] follows stem:[(\textbf{p} | D) \sim \mathrm{Dirichlet}(a_1 + n_1, a_1 + n_1, \dots, a_m + n_m)].
++
+Using a prior which represents one imagined observation of each outcome is called "Laplace smoothing" and it guarantees that none of our probabilities are 0 or 1.
+
+* Step 3:
++
+The argument that gives the highest value of the function for Dirichlet distribution is its mode. The mode of the posterior distribution of stem:[\Theta],
++
+[stem]
+++++
+\hat{\textbf{p}}_{\text{MAP}} = \frac{a_i + n_i -1}{ \left(\sum_{i=1}^m a_i \right) + \left( \sum_{i=1}^m n_i \right) - m}
+++++
++
+When we use the Laplace prior stem:[\mathrm{Dirichlet}(2, 2, \dots, 2)], this turns out to be:
++
+[stem]
+++++
+\hat{\textbf{p}}_{\text{MAP}} = \frac{n_i +1}{ \left( \sum_{i=1}^m n_i \right) + m}
+++++
++
+In our case, stem:[X_1 = 3, X_2 = 2, X_3=0, X_4 = 3, X_5=1, X_6=3]. So our posterior distribution is stem:[\mathrm{Dirichlet}(5,4,2,5,3,5)].
++
+[stem]
+++++
+\hat{p}_1 = \frac{2 + 3 -1}{12 + 12 - 6} = \frac{4}{18} = 0.22
+++++
++
+Similarly, we can calculate for other stem:[\hat{p}_i]. It turns out to be:
++
+[stem]
+++++
+\hat{p}_2 = \frac{3}{18}; \hat{p}_3 = \frac{1}{18}; \hat{p}_4 = \frac{4}{18}; \hat{p}_5 = \frac{2}{18}; \hat{p}_6 = \frac{4}{18}
+++++
+
+== MAP for Pareto ==
+Can we learn the parameter from the data?
+
+[source,python]
+----
+observations = [1.677, 3.812, 1.463, 2.641, 1.256, 1.678, 1.157, 1.146, 1.323, 1.029, 1.238, 1.018, 1.171, 1.123, 1.074, 1.652, 1.873, 1.314, 1.309, 3.325, 1.045, 2.271, 1.305, 1.277, 1.114, 1.391, 3.728, 1.405, 1.054, 2.789, 1.019, 1.218, 1.033, 1.362, 1.058, 2.037, 1.171, 1.457, 1.518, 1.117, 1.153, 2.257, 1.022, 1.839, 1.706, 1.139, 1.501, 1.238, 2.53, 1.414, 1.064, 1.097, 1.261, 1.784, 1.196, 1.169, 2.101, 1.132, 1.193, 1.239, 1.518, 2.764, 1.053, 1.267, 1.015, 1.789, 1.099, 1.25, 1.253, 1.418, 1.494, 1.015, 1.459, 2.175, 2.044, 1.551, 4.095, 1.396, 1.262, 1.351, 1.121, 1.196, 1.391, 1.305, 1.141, 1.157, 1.155, 1.103, 1.048, 1.918, 1.889, 1.068, 1.811, 1.198, 1.361, 1.261, 4.093, 2.925, 1.133, 1.573]
+----
+
+These i.i.d observations are drawn from a pareto distribution with PDF stem:[f(x)= \frac{\alpha}{x^{\alpha+1}}]. What is the most likely value for the parameter stem:[\alpha] given the data?
+
+* Step 1:
++
+We place a prior on the parameter stem:[\alpha], that is, stem:[\alpha \sim \mathrm{N}(\mu = 2, \sigma^2 = 3)]. This defines our belief in the parameter before we see any data.
+
+* Step 2: MAP function is: (equivalent to likelihood function in MLE)
++
+[stem]
+++++
+\begin{align*}
+M(\alpha) & = \log g(\alpha) + \sum_{i=1}^n \log f(x_i | \alpha) \\
+& = \log g(\alpha) + n \log \alpha - (\alpha+1) \sum_{i=1}^n \log x_i  && \text{ from MLE} \\
+& = \log \frac{1}{\sqrt{3} \sqrt{2\pi}} e^{\frac{-(\alpha-2)^2}{6}} + n \log \alpha - (\alpha+1) \sum_{i=1}^n \log x_i  && \text{from } \mathrm{Normal}(2,3) \text{ PDF} \\
+& = K + \frac{-(\alpha-2)^2}{6} + n \log \alpha - (\alpha+1) \sum_{i=1}^n \log x_i
+\end{align*}
+++++
+
+* Step 3: MAP Estimate is: Choose stem:[\alpha] which is the arg max of this function.
++
+[stem]
+++++
+\hat{\alpha}_{\text{MAP}} = \underset{\alpha}{\mathrm{arg max}}\, M(\alpha)
+++++
++
+To find the arg max, we need the derivative of the function:
++
+[stem]
+++++
+\frac{\partial M(\alpha)}{\partial \alpha} = \frac{-2\alpha + 4}{6} + \frac{n}{\alpha} - \sum_{i=1}^n \log x_i
+++++
++
+Now we can use the gradient ascent algorithm to find the optimal stem:[\alpha].

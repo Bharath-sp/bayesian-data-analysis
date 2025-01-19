@@ -1,0 +1,193 @@
+= Bayesian Inference =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Rain Prediction Example ==
+MLE and MAP gives us point estimates. MLE estimates the parameter by maximizing the likelihood, and MAP estimates the parameter by maximizing the posterior distribution. Instead of point estimates, we can make use of the entire distribution over the parameters to make predictions.
+
+Say we are given whether it has rained yesterday or not. We just have a single data point stem:[x=0]. And say we want to do parameter estimation of the chosen distribution, using this data. This is a binary valued data and we can model stem:[X \sim \text{Bern}(\theta)].
+
+The probability mass function of stem:[X] is
+
+[stem]
+++++
+p(x \,|\, \theta) = \begin{cases}
+\theta & \text{if } x=1\\
+1-\theta & \text{if } x=0
+\end{cases} = \theta^{x} (1-\theta)^{1-x}
+++++
+
+=== MLE Estimate ===
+We know the MLE is
+
+[stem]
+++++
+\begin{align*}
+\hat{\theta}_{\text{MLE}} & = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N p(x_i | \theta) \\
+& = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N \theta^{x_i} (1-\theta)^{1-x_i} \\
+& = \underset{\theta}{\mathrm{arg max}}\, (1-\theta) = 0 \hspace{1cm} \text{where } \theta \in [0,1]
+\end{align*}
+++++
+
+=== MAP Estimate ===
+Let's take our prior as uniform distribution, stem:[\theta \sim \text{Unif}[0,1\]]. Then the PDF of stem:[\theta] is
+
+[stem]
+++++
+p(\theta) = \begin{cases}
+1 & \text{if } 0 \leq \theta \leq 1\\
+0 & \text{otherwise}
+\end{cases}
+++++
+
+The MAP estimate is
+
+[stem]
+++++
+\begin{align*}
+\hat{\theta}_{\text{MAP}} & = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N p(x_i | \theta) \, p(\theta) \\
+& = \underset{\theta}{\mathrm{arg max}} \, (1-\theta) \, p(\theta) \\
+& = \underset{\theta}{\mathrm{arg max}}\, (1-\theta) = 0 \hspace{1cm} \text{where } \theta \in [0,1] \text{and } p(\theta)=1 \in [0,1]
+\end{align*}
+++++
+
+=== Bayesian Inference ===
+
+We know the Bayes theorem
+[stem]
+++++
+p(\theta | X=0) = \frac{p( X=0 | \theta) \, p(\theta)}{p(X=0)}
+++++
+
+*How to find stem:[p(X=0)]?*
+
+If we know the distribution of stem:[X], we can easily find stem:[p(X=0)]. We know that stem:[X \sim \text{Bern}(\theta)], but stem:[\theta] itself is a random variable. The random variables stem:[X] and stem:[\theta] are related through stem:[X \sim \text{Bern}(\theta)]. The joint distribution is
+
+[stem]
+++++
+p_{\theta, X}(\theta, x) = p_{X|\theta}(x|\theta) \, p_\theta(\theta)
+++++
+
+where
+
+[stem]
+++++
+p_{X|\theta}(x|\theta) = \begin{cases}
+\theta, & \text{if } x=1 \\
+1-\theta, & \text{if } x=0 \\
+0, & \text{otherwise} 
+\end{cases} \hspace{1cm} p_\theta(\theta) = \begin{cases}
+1 & \text{if } 0 \leq \theta \leq 1\\
+0 & \text{otherwise}
+\end{cases}
+++++
+
+The joint distribution is
+
+[stem]
+++++
+p_{\theta, X}(\theta, x) = \begin{cases}
+\theta, & \text{if } x=1 \text{ and } 0 \leq \theta \leq 1\\
+1-\theta, & \text{if } x=0 \text{ and } 0 \leq \theta \leq 1\\
+0, & \text{otherwise}
+\end{cases}
+++++
+
+We can derive the marginal distribution stem:[p_X(x)] from the joint distribution by integrating out stem:[\theta]
+
+[stem]
+++++
+p_X(x) = \int_0^1 p_{\theta, X}(\theta, x) d\theta = \int_0^1 p(x \, | \, \theta) p(\theta) d\theta
+++++
+
+For stem:[X=0],
+
+[stem]
+++++
+p_X(0) = \int_0^1 p_{\theta, X}(\theta, x) d\theta = \int_0^1 (1-\theta) d\theta = \frac{1}{2}
+++++
+
+The posterior distribution can be obtained by multiplying the prior distribution with the likelihood, and dividing it by the normalization constant stem:[p(X=0)] (aka marginal likelihood).
+
+[stem]
+++++
+p(\theta | X=0) =  \begin{cases} 2 (1-\theta), & \theta \in [0,1] \\
+0, & \text{ow}
+\end{cases}
+++++
+
+image::.\images\rain_bayesian_01.png[align='center',800,400]
+
+The arg max of this distribution (or mode of this distribution) is the MAP estimate of stem:[\theta]. This happens at stem:[\theta=0], so stem:[\hat{\theta}_{\text{MAP}}=0]. This is the same result that we got above.
+
+Both MLE and MAP give us the point estimate of stem:[\hat{\theta} = 0]. If we were to predict whether it will rain tomorrow using these estimates, we get stem:[p(\tilde{x}=1 \, | \, \hat{\theta}_{\text{MLE}}) = p(\tilde{x}=1 \, | \, \hat{\theta}_{\text{MAP}}) = 0]. It predicts that it will never rain tomorrow. This is a problem.
+
+Even on incorporating a prior with all the possible values of stem:[\theta] equally likely, MAP estimate didn't give us a non-zero estimate. So just specifying prior alone is not sufficient.
+
+Looking at the posterior distribution, we can observe that other values of stem:[\theta] (other than 0) are also possible with non-zero probabilities. We can make use of the whole distribution instead of just picking the value for which the PDF is maximum.
+
+Consider we are given the posterior distribution over stem:[\theta] and we are sampling values from it. We get more values close to 0 and some other values as well.
+
+NOTE: Sampling is the reverse of parameter estimation. In parameter estimation, we are given some samples and we estimate the parameter values. In sampling, we are given parameter values, we sample data points from the distribution with those parameter values.
+
+* Say we got stem:[\hat{\theta} = 0.1], then our prediction that it will rain tomorrow will be stem:[p(\tilde{x}=1 \, | \, \hat{\theta} =0.1) = 0.1].
+* Say we got stem:[\hat{\theta} = 0.05], then our prediction that it will rain tomorrow will be stem:[p(\tilde{x}=1 \, | \, \hat{\theta}=0.05) = 0.05].
+
+Based on the values of stem:[\theta] sampled, we get different predictions. To get a better prediction, we can averge all these predictions.
+
+[stem, id='equation_1']
+++++
+\begin{equation}
+p(\tilde{x}=1) = \frac{1}{N} \sum_{i=1}^N p(\tilde{x}=1 \, | \, \hat{\theta}_i)
+\end{equation}
+++++
+
+As stem:[\theta] is continuous and it is estimated using the given data, we can write
+
+[stem]
+++++
+p(\tilde{x}=1 \,|\, X=0) = \int p(\tilde{x} =1 \, | \, \theta) \, p(\theta \, | \, X=0) d\theta
+++++
+
+We can approximate this integral value using <<equation_1, Equation 1>>. This is nothing but the expected value of stem:[p(\tilde{x} =1 \, | \, \theta)] with respect to stem:[\theta] given the data.
+
+====
+We know that the expected value of a continuous random variable stem:[X] is stem:[\mathbb{E}[X\] = \int x \cdot p_X(x) dx]. Here stem:[p(\tilde{x} =1 \, | \, \theta) = \theta]. So in short, we are finding the expected value of stem:[\theta] and the distribution that we use is the posterior distribution for stem:[\theta].
+
+[stem]
+++++
+\mathbb{E}[\theta \, | \, \mathcal{D}] = \int \theta \, p(\theta \, | \, \mathcal{D} ) d\theta
+++++
+====
+
+[stem]
+++++
+\begin{align*}
+p(\tilde{x}=1 \,|\, X=0) & = \mathbb{E}_{\theta | X=0}[p(\tilde{x} =1 \, | \, \theta)] \\
+& = \int_{\theta} p(\tilde{x}=1, \theta \,|\, X=0) d\theta \\
+& = \int_{\theta} p(\tilde{x}=1 \,|\, \theta) \, p(\theta \,|\, X=0) d\theta \\
+& = \int_0^1 \theta \cdot 2(1-\theta) d\theta = \frac{1}{3}
+\end{align*}
+++++
+
+Given a dataset, this gives us the prediction for new data point. As we see through Bayesian inference, we get a non-zero probability that it will rain tomorrow.
+
+== Summary ==
+In general, given a dataset we are interested in making predictions for new data points, stem:[p(\tilde{\mathbf{x}} \,|\, \mathcal{D})].
+
+* In classical ML setup, we use the MLE or MAP point estimates to make predictions.
++
+[stem]
+++++
+p(\tilde{\mathbf{x}} \, | \, \mathcal{D}) = p(\tilde{\mathbf{x}} \, | \, \hat{\theta}_{\text{MLE}}) \hspace{1cm} \text{ or } p(\tilde{\mathbf{x}} \, | \, \mathcal{D}) = p(\tilde{\mathbf{x}} \, | \, \hat{\theta}_{\text{MAP}})
+++++
+* In Bayesian inference, we make use of the entire posterior distribution to make predictions. We compute the mean of the posterior distribution.
++
+[stem]
+++++
+p(\tilde{\mathbf{x}} \, | \, \mathcal{D}) = \int_{\theta} p(\tilde{\mathbf{x}} \, | \, \theta) \cdot p(\theta \, | \, \mathcal{D} ) d\theta
+++++

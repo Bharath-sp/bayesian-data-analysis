@@ -1,0 +1,72 @@
+= MLE - Properties =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== MLE for Uniform ==
+Say we observed the following i.i.d samples: stem:[[0.15, 0.20, 0.30, 0.40, 0.65, 0.70, 0.75\]]. Our model is that every data point has a single value and that value stem:[x_i] is drawn from continuous uniform distribution, stem:[X_i \sim \mathrm{Uni}(0, \beta)]. Find the MLE estimate of stem:[\beta].
+
+Probability mass function of stem:[X_i] is stem:[f(x_i \,|\, \beta) = 
+\begin{cases}
+\frac{1}{\beta - 0} & \text{if } 0 \leq x_i \leq \beta\\
+0 & \text{ elsewhere }
+\end{cases}
+]
+
+The parametric space is dependent on the data points, stem:[\beta] should be greater than all stem:[x_i]'s. For a specified stem:[\beta] from this space, this gives us the likelihood of a single data point stem:[x_i]. The likelihood of all the data points is given by,
+
+[stem]
+++++
+\begin{align*}
+L(\beta) = f(x_1, x_2, \dots, x_n \,|\, \beta) = \prod_{i=1}^{n} f(x_i \,|\, \beta) & = 
+\begin{cases}
+\prod_{i=1}^{n} \frac{1}{\beta} & \text{if } 0 \leq x_i \leq \beta \\
+0 & \text{ elsewhere }
+\end{cases} \\
+& = \begin{cases}
+\frac{1}{\beta^n} & \text{if } 0 \leq x_i \leq \beta \\
+0 & \text{ elsewhere }
+\end{cases}
+\end{align*}
+++++
+
+So for the given data, our likelihood function will be,
+
+[stem]
+++++
+L(\beta) =
+\begin{cases}
+\frac{1}{\beta^7} & \text{for } \beta \geq 0.75 \\
+0 & \text{ elsewhere }
+\end{cases}
+++++
+
+image::.\images\mle_uniform.png[align='center', 500, 400]
+
+The likelihood reaches the maximum at stem:[\beta=0.75], which is the maximum of all the points. So stem:[\hat{\beta}_{\text{MLE}} = \max(x_1, x_2, \dots, x_n)]. But this data is actually generated from stem:[\mathrm{Uni}(0, 1)].
+
+== Properties of MLE ==
+
+Maximum Likelihood estimators are generally
+
+* Asymptotically optimal: stem:[\lim_{n\to\infty} P(|\hat{\theta} - \theta| < \epsilon) = 1] for stem:[\epsilon>0]. As stem:[n\to\infty] (as we get more data points), probability that stem:[\hat{\theta}] significantly differs from stem:[\theta] is 0. In simpler terms, MLE doesn't always give the perfect estimate of our parameters, but as the data points get larger it will converge to the right number.
+
+* Potentially biased (though asymptotically less, as stem:[n\to\infty]). It might choose bad estimates for small data sizes.
+
+== Problems with MLE ==
+
+In most cases, small sample size affect MLE.
+
+* As seen with uniform distribution, it gives biased estimate for stem:[\alpha] and stem:[\beta] for small stem:[n].
++
+MLE only tries to describe the data we have seen. It doesn't attempt to generalize to unseen data. In machine learning terms, MLE always overfits to the data (i.e.,) the parameters it chooses describes the given data set too well. The chosen parameters are not very general to unseen data.
+
+* As seen with normal distribution, it gives biased estimate of variance. It underestimates the variance for small stem:[n].
+
+* MLE doesn't provide any mechanism to incorporate the domain knowledge that we have.
+
+* MLE doesn't give a rich representation of expressing how certain we are. For the given data and model, it just gives us a single number for each parameter.
+

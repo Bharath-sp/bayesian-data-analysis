@@ -1,0 +1,96 @@
+= MAP Estimation =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Idea Formulation ==
+Maximum A-Posteriori (MAP) estimation seeks to find the value of a parameter stem:[\theta] that maximizes the posterior distribution stem:[P(\Theta|  \mathcal{D})], where stem:[\mathcal{D}] is the observed data. Here we not only look at the data to estimate the parameter, but also inject into the estimation calculation our prior beliefs regarding the parameter. Bayes theorem helps us to do this.
+
+[stem]
+++++
+p(\Theta | \mathcal{D}) = \frac{p( \mathcal{D} | \Theta= \theta) \, p(\Theta)}{p(\mathcal{D})}
+++++
+
+* stem:[p( \mathcal{D} | \Theta= \theta)] is the likelihood which represents the probability of seeing the observations given the parameter.
+* stem:[p(\Theta)] is the prior distribution: This term allows us to add the information that we have about the parameter in terms of a distribution over the parameter.
+* stem:[p(\mathcal{D})] is the marginal likelihood.
+* stem:[p(\Theta | \mathcal{D})] is the posterior distribution over the parameter.
+
+With MAP estimation, we are interested in the stem:[\theta] for which the posterior distribution is maximum.
+
+[stem]
+++++
+\hat{\theta}_{\text{MAP}} = \underset{\theta}{\mathrm{arg max}}\, p(\Theta=\theta \,|\, \mathcal{D} ) = \underset{\theta}{\mathrm{arg max}}\, p( \mathcal{D} \,|\, \Theta ) p(\Theta)
+++++
+
+The term stem:[p(\Theta | \mathcal{D})] is a positive constant as it doesn't depend on stem:[\theta]. Multiplying everything by a positive constant won't change the argument that maximizes the function, so this term is ignored.
+
+* MLE answers, "What parameter makes the data as likely as possible?"
+* MAP answers the question, "What is the most likely value of the parameter given the data?"
+
+The part stem:[\underset{\theta}{\mathrm{arg max}}\, p( \mathcal{D} \,|\, \Theta )] is actually solved by MLE. Multiplying this quantity by how likely we think the parameter values will be before seeing any data (prior), gives us the MAP estimate.
+
+== MAP Estimation Procedure ==
+Consider a sample of stem:[n] i.i.d random variables stem:[(X_1, X_2, \dots, X_n)]. Each stem:[X_i] was drawn from a distribution with density (or mass) function stem:[p(X_i | \boldsymbol{\theta})], where stem:[\boldsymbol{\theta} = (\theta_1, \theta_2, \dots, \theta_k)]. Given the observed data stem:[(x_1, x_2, \dots, x_n)], we need to find an estimate of stem:[\boldsymbol{\theta}].
+
+[stem]
+++++
+\begin{align*}
+\hat{\theta}_{\text{MAP}} =& \underset{\theta}{\operatorname{argmax }} \text{ } p(\Theta = \theta | x_1, x_2, \dots x_n) \\
+=& \underset{\theta}{\operatorname{argmax }} \text{ } p(x_1, x_2, \dots, x_n | \theta) p(\theta) && \text{by Bayes Theorem} \\
+=& \underset{\theta}{\operatorname{argmax }} \text{ } \prod_{i=1}^n p(x_i | \theta) p(\theta) && \text{Since the samples are IID}
+\end{align*}
+++++
+
+It will be more convenient to find the argmax of the log of the MAP function, which gives us the final form for MAP estimation of parameters.
+
+[stem]
+++++
+\begin{align*}
+\hat{\theta}_{\text{MAP}} =& \underset{\theta}{\operatorname{argmax }} \text{ } \left( \log (p(\theta)) + \sum_{i=1}^n \log(p(x_i | \theta)) \right)
+\end{align*}
+++++
+
+The MAP estimate is the mode of the posterior distribution for stem:[\theta]. If we look at this equation side by side with the MLE equation we can notice that MAP is the argmax of the exact same sum of log-likelihood plus a term for the log of the prior.
+
+[cols="1,1"]
+|===
+|MLE |MAP
+
+|
+\begin{align*}
+\hat{\theta}_{\text{MLE}} & = \underset{\theta}{\mathrm{arg max}}\, \log p(x_1, x_2, \dots, x_n \| \theta) \\
+& = \underset{\theta}{\mathrm{arg max}}\, \sum_{i=1}^n \log p(x_i \| \theta)
+\end{align*}
+|
+\begin{align*}
+\hat{\theta}_{\text{MAP}} & = \underset{\theta}{\mathrm{arg max}}\, \log p(\Theta=\theta \,\|\, x_1, x_2, \dots, x_n ) \\
+& = \underset{\theta}{\mathrm{arg max}}\, \log  \bigl( p(  x_1, x_2, \dots, x_n \,\|\, \theta ) \cdot p(\theta) \bigr) \\
+& = \underset{\theta}{\operatorname{argmax }} \text{ } \left( \log (p(\theta)) + \sum_{i=1}^n \log p(x_i \| \theta) \right)
+\end{align*}
+|===
+
+When dealing with data stem:[(\mathbf{x}_i, y_i)]:
+
+[cols="1,1"]
+|===
+|MLE |MAP
+
+|
+\begin{align*}
+\hat{\boldsymbol{\theta}}_{\text{MLE}} & = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, \log p((\mathbf{x}_1, y_1), \dots, (\mathbf{x}_N, y_N) \| \boldsymbol{\theta}) \\
+& = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, \log p(y_1, \dots, y_N \| \, \mathbf{x}_1, \dots, \mathbf{x}_N; \boldsymbol{\theta}) \\
+& = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, \sum_{i=1}^N \log p(y_i \| \, \mathbf{x}_i;\, \boldsymbol{\theta})
+\end{align*}
+|
+\begin{align*}
+\hat{\boldsymbol{\theta}}_{\text{MAP}} & = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, \log p(\Theta=\boldsymbol{\theta} \,\|\, (\mathbf{x}_1, y_1), \dots, (\mathbf{x}_N, y_N) ) \\
+& = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, \log \bigl( p(y_1, \dots, y_N \| \, \mathbf{x}_1, \dots, \mathbf{x}_N, \boldsymbol{\theta}) \cdot p(\boldsymbol{\theta}) \bigr)\\
+& = \underset{\boldsymbol{\theta}}{\operatorname{argmax }} \text{ } \left( \log (p(\boldsymbol{\theta})) + \sum_{i=1}^N \log p(y_i \| \, \mathbf{x}_i;\, \boldsymbol{\theta}) \right)
+\end{align*}
+|===
+
+MLE can lead to severe overfitting, in particular, in the small-data regime. MAP addresses this issue by placing a prior on the parameters that plays the role of a regularizer. MAP estimation pulls the estimate toward the prior.

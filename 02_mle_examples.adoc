@@ -1,0 +1,292 @@
+= MLE - Examples =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== MLE for Poisson ==
+Say we observed the following i.i.d samples: stem:[[6,1,2,1,2,3,3,2,1,3,1,3\]]. Our model is that every data point has a single value and that value stem:[x_i] is drawn from Poisson, stem:[X_i \sim \mathrm{Poi}(\lambda)] where stem:[\lambda >0]. That is, each sample is a realization of a random variable stem:[X_i]. Find the MLE estimate of stem:[\lambda].
+
+* Step 1:
++
+Probability mass function of stem:[X_i] is stem:[f(x_i \,|\, \lambda) = \frac{e^{-\lambda} \lambda^{x_i}}{x_i !}]. The parametric space is stem:[\lambda > 0]. For a specified stem:[\lambda], this gives us the likelihood of a single data point stem:[x_i]. The likelihood of all the data points is given by,
++
+[stem]
+++++
+L(\lambda) = f(x_1, x_2, \dots, x_n \,|\, \lambda) = \prod_{i=1}^{n} f(x_i \,|\, \lambda) = \prod_{i=1}^{n} \frac{e^{-\lambda} \lambda^{x_i}}{x_i !}
+++++
+
+* Step 2:
++
+The log-likelihood of all the data points is given by,
++
+[stem]
+++++
+\begin{align*}
+LL(\lambda) = \log \prod_{i=1}^{n} \frac{e^{-\lambda} \lambda^{x_i}}{x_i !} & = \sum_{i=1}^n \log \frac{e^{-\lambda} \lambda^{x_i}}{x_i !} \\
+& = \sum_{i=1}^n \log \left( e^{-\lambda} \lambda^{x_i} \right) - \log x_i! \\
+& = \sum_{i=1}^n \log e^{-\lambda} + \log \lambda^{x_i} - \log x_i! \\
+& = \sum_{i=1}^n -\lambda + x_i \log \lambda - \log x_i!
+\end{align*}
+++++
+
++
+In the parametric space stem:[\lambda > 0], we need to find that stem:[\lambda] which maximizes this function. As the function is valid only for stem:[\lambda > 0], the condition is taken care of itself.
+
+* Step 3:
++
+Differentiate stem:[LL(\lambda)] w.r.t stem:[\lambda]: Using the property that derivative of a sum is equal to the sum of the derivatives.
+
+[stem]
+++++
+\begin{align*}
+\frac{d}{d\lambda} LL(\lambda) & = \frac{d}{d\lambda} \left(  \sum_{i=1}^n -\lambda + x_i \log \lambda - \log x_i! \right) \\
+& = \frac{d}{d\lambda} \left(   -n\lambda + \log \lambda \sum_{i=1}^n x_i  - \sum_{i=1}^n \log x_i! \right) \\
+& = -n + \frac{1}{\lambda} \sum_{i=1}^n x_i
+\end{align*}
+++++
+
+* Step 4:
++
+Set it to 0 and solve for stem:[\lambda]:
+
+[stem]
+++++
+\begin{align*}
+\frac{d}{d\lambda} LL(\lambda) & = 0  \\
+-n + \frac{1}{\lambda} \sum_{i=1}^n x_i & = 0 \Rightarrow {\hat{\lambda}} = \frac{1}{n} \sum_{i=1}^n x_i
+\end{align*}
+++++
+
+MLE of Poisson is the sample mean!
+
+== MLE for Bernoulli ==
+Consider a sample of stem:[n] i.i.d random variables stem:[X_1, X_2, \dots, X_n]. Each stem:[X_i] is drawn from a Bernoullian distribution, stem:[X_i \sim \mathrm{Ber}(p)]. Say we our observed samples (realizations) are: stem:[(x_1, x_2, \dots, x_n) = [0,1,0,0, \dots, 1,0\]]. Find the MLE estimate of stem:[p].
+
+* Step 1:
++
+Probability mass function of stem:[X_i] is 
++
+[stem]
+++++
+f(x_i \,|\, p) = \begin{cases}
+p & \text{if } x_i=1\\
+(1-p) & \text{if } x_i=0
+\end{cases}
+++++
+
++
+This function is not differentiable, so we use a continuous version of this expression, stem:[f(x_i \,|\, p) = p^{x_i} (1-p)^{1-x_i}]. The parametric space is stem:[0 < p<1].
++
+image::.\images\bernoulli.png[align='center']
++
+For a specified stem:[p], this gives us the likelihood of a single data point stem:[x_i]. The above graph is for stem:[p=0.2]. The likelihood of all the data points is given by,
++
+[stem]
+++++
+L(p) = f(x_1, x_2, \dots, x_n \,|\, p) = \prod_{i=1}^{n} f(x_i \,|\, p) = \prod_{i=1}^{n} p^{x_i} (1-p)^{1-x_i}
+++++
+
+* Step 2:
++
+The log-likelihood of all the data points is given by,
++
+[stem]
+++++
+\begin{align*}
+LL(p) = \log \prod_{i=1}^{n} f(x_i \,|\, p) & = \sum_{i=1}^n \log f(x_i \,|\, p) \\
+& = \sum_{i=1}^n \log \left\{ p^{x_i} (1-p)^{1-x_i} \right\} \\
+& = \sum_{i=1}^n \log p^{x_i} + \log (1-p)^{1-x_i} \\
+& = \sum_{i=1}^n x_i \log p + (1-x_i) \log (1-p) \\
+& = \log p \sum_{i=1}^n x_i + \log (1-p) \sum_{i=1}^n (1-x_i) \\
+& = Y \log p + (n-Y) \log (1-p) \text{ where } Y = \sum_{i=1}^n x_i
+\end{align*}
+++++
+
++
+In the parametric space stem:[0 < p<1], we need to find that stem:[p] which maximizes this function. As the function is valid only for stem:[0 <p<1], the condition is taken care of itself.
+
+* Step 3:
++
+Differentiate stem:[LL(p)] w.r.t stem:[p]: Using the property that derivative of a sum is equal to the sum of the derivatives.
++
+[stem]
+++++
+\begin{align*}
+\frac{d}{dp} LL(p) & = \frac{d}{dp} \left\{  Y \log p + (n-Y) \log (1-p) \right\} \\
+& = \frac{1}{p} Y + \frac{-1}{1-p}  (n-Y) = \frac{Y}{p} + \frac{Y-n}{1-p}
+\end{align*}
+++++
+
+* Step 4:
++
+Set it to 0 and solve for stem:[p]:
++
+[stem]
+++++
+\begin{align*}
+\frac{d}{dp} LL(p) & = 0  \\
+\frac{Y}{p} + \frac{Y-n}{1-p} &= 0 \Rightarrow \hat{p} = \frac{Y}{n} = \frac{1}{n} \sum_{i=1}^n x_i
+\end{align*}
+++++
+
+MLE of Bernoulli is the sample mean!
+
+== MLE for Gaussian ==
+Consider a sample of stem:[n] i.i.d random variables stem:[X_1, X_2, \dots, X_n]. Each stem:[X_i] is drawn from a Gaussian, stem:[X_i \sim \mathrm{N}(\mu, \sigma^2)].
+Say we observed the following samples: stem:[[6.3, 5.3, 5.4, 7.1, 4.6, 6.7, 5.3, 4.8, 5.6, 3.4, 5.4, 3.4, 4.8, 7.9, 4.6, 7.0, 2.9, 6.4, 6.0, 4.3\]]. Find the MLE estimate of stem:[\mu \text{ and } \sigma^2].
+
+* Step 1:
++
+Probability density function of stem:[X_i] is stem:[f(x_i \,|\, \mu, \sigma^2) = \frac{1}{\sigma \sqrt{2\pi}} e^{-(x_i -\mu)^2 / (2\sigma^2)}]. Our parametric space is stem:[\mu \in (-\infty, \infty), \sigma >0]. For a specified stem:[\mu, \sigma^2], this gives us the likelihood of a single data point stem:[x_i]. The likelihood of all the data points is given by,
++
+[stem]
+++++
+L(\mu, \sigma^2) = f(x_1, x_2, \dots, x_n \,|\, \mu, \sigma^2) = \prod_{i=1}^{n} f(x_i \,|\, \mu, \sigma^2) = \prod_{i=1}^{n} \frac{1}{\sigma \sqrt{2\pi}} e^{-(x_i -\mu)^2 / (2\sigma^2)}
+++++
+
+* Step 2:
++
+The log-likelihood of all the data points is given by,
++
+[stem]
+++++
+\begin{align*}
+LL(\mu, \sigma^2) = \log \prod_{i=1}^{n} f(x_i \,|\, \mu, \sigma^2) & = \sum_{i=1}^n \log f(x_i \,|\, \mu, \sigma^2) \\
+& = \sum_{i=1}^n \log \left\{ \frac{1}{\sigma \sqrt{2\pi}} e^{-(x_i -\mu)^2 / (2\sigma^2)} \right\} \\
+& = \sum_{i=1}^n \log e^{-(x_i -\mu)^2 / (2\sigma^2)} - \log \sigma \sqrt{2\pi} \\
+& = \sum_{i=1}^n \left\{ \frac{-(x_i -\mu)^2}{2\sigma^2} - \log \sigma \sqrt{2\pi} \right\} \\
+& = - \sum_{i=1}^n \frac{(x_i -\mu)^2}{2\sigma^2} - n \log \sigma \sqrt{2\pi}
+\end{align*}
+++++
+
+* Step 3:
++
+Differentiate stem:[LL(\mu, \sigma^2)] w.r.t stem:[\mu, \sigma^2] separately: Using the property that derivative of a sum is equal to the sum of the derivatives.
++
+[stem]
+++++
+\begin{align*}
+\frac{\partial}{\partial\mu} LL(\mu, \sigma^2) & = \frac{\partial}{\partial\mu} \left\{ - \sum_{i=1}^n \frac{(x_i -\mu)^2}{2\sigma^2} - n \log \sigma \sqrt{2\pi} \right\} \\
+& = - \frac{1}{2\sigma^2} \sum_{i=1}^n 2 (x_i - \mu) * -1 \Rightarrow \frac{1}{\sigma^2} \sum_{i=1}^n (x_i - \mu)
+\end{align*}
+++++
++
+[stem]
+++++
+\begin{align*}
+\frac{\partial}{\partial\sigma} LL(\mu, \sigma^2) & = \frac{\partial}{\partial\sigma} \left\{ - \sum_{i=1}^n \frac{(x_i -\mu)^2}{2\sigma^2} - n \log \sigma - n \log \sqrt{2\pi} \right\} \\
+& = - \sum_{i=1}^n (x_i - \mu)^2 \frac{\partial}{\partial\sigma} \frac{1}{2\sigma^2} - n \frac{\partial}{\partial\sigma} \log \sigma \\
+& =  \frac{1}{\sigma^3} \sum_{i=1}^n (x_i - \mu)^2 - \frac{n}{\sigma} \\
+\end{align*}
+++++
+
+* Step 4:
++
+Set both equations to 0 and solve for stem:[\mu, \sigma^2]:
++
+[stem]
+++++
+\begin{align*} 
+\frac{\partial}{\partial\mu} LL(\mu, \sigma^2) & = 0 \\
+\frac{1}{\sigma^2} \sum_{i=1}^n (x_i - \mu) & = 0 \Rightarrow \hat{\mu} = \frac{1}{n}  \sum_{i=1}^n x_i
+\end{align*}
+++++
++
+[stem]
+++++
+\begin{align*} 
+\frac{\partial}{\partial\sigma} LL(\mu, \sigma^2) & = 0 \\
+\frac{1}{\sigma^3} \sum_{i=1}^n (x_i - \mu)^2 - \frac{n}{\sigma} &  = 0 \\
+\frac{1}{\sigma^3} \sum_{i=1}^n (x_i - \mu)^2 &  = \frac{n}{\sigma} \Rightarrow \hat{\sigma}^2 = \frac{1}{n}  \sum_{i=1}^n (x_i - \hat{\mu})^2
+\end{align*}
+++++
+
+As we can see the MLE estimate of mean from the given data is unbiased, but the estimate of variance is biased.
+
+== MLE for Multinomial ==
+Consider a sample of stem:[n] i.i.d random variables stem:[Y_1, Y_2, \dots, Y_n]. Each stem:[Y_i] is drawn from one of stem:[m] outcomes. Probability of each outcome on a single trial is given by stem:[p_i], where stem:[\sum_{i=1}^m p_i =1].
+
+Suppose each RV is outcome of 6-sided die. Say we rolled the die 12 times and observed: stem:[[1,1,1,2,2,4,4,4,5,6,6,6\]]. There are 6 outcomes in this case, so the probability of each outcome on a single trial is stem:[p_i = \frac{1}{6}] (if it is a fair die).
+
+Let stem:[X_i] be the number of trials with outcome stem:[i], where stem:[\sum_{i=1}^m X_i = n]. In our case, stem:[X_1 = 3, X_2 = 2, X_3=0, X_4 = 3, X_5=1, X_6=3]. The distribution of stem:[(X_1, X_2, \dots, X_m)] is called the Multinomial distribution and it is a multivariate distribution.
+
+[NOTE]
+====
+The multinomial distribution is a generalization of the binomial distribution to more than two categories.
+
+Compare this with flipping a coin experiment. We consider a sample of stem:[n] i.i.d random variables stem:[Y_1, Y_2, \dots, Y_n]. Each stem:[Y_i] is drawn from one of 2 outcomes, heads or tails. Probability of observing heads and tails on a single trial is given by stem:[p] and stem:[1-p] respectively. We have a formal name for this distribution, stem:[Y_i \sim \mathrm{Ber}(p)].
+
+Say we observed stem:[[0,1,0,0,1,1,0,1,0,1,0,0\]]. And let stem:[X] be the number of trials with heads. Say in our case, stem:[X=5]. This distribution of stem:[X] is known as Binomial and it is an univariate distribution.
+====
+
+Given a sample stem:[(x_1, x_2, \dots, x_m)], find the MLE estimate of the probabilities of each outcome stem:[\textbf{p} = (p_1, p_2, \dots, p_m)].
+
+* Step 1:
++
+Probability mass function of stem:[(X_1, X_2, \dots, X_m)] is
++
+[stem]
+++++
+P(X_1, X_2, \dots, X_m \,|\, n,\textbf{p} ) = \frac{n!}{x_1! x_2! \dots x_m!} (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m}) \text{ such that } \sum_{i=1}^m x_i = n \text{ and } \sum_{i=1}^m p_i = 1
+++++
++
+Our parametric space is stem:[p_i \in [0,1\]]. For a specified stem:[(p_1, p_2, \dots, p_m)], this gives us the likelihood of our data point stem:[(x_1, x_2, \dots, x_m)].
++
+[stem]
+++++
+\begin{align*}
+L(\textbf{p}) & = P(x_1, x_2, \dots, x_m \,|\, n,\textbf{p} ) \\
+& = \frac{n!}{x_1! x_2! \dots x_m!} (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m}) \text{ such that } \sum_{i=1}^m p_i = 1
+\end{align*}
+++++
+
+* Step 2:
++
+The log-likelihood of our data point is given by,
++
+[stem]
+++++
+\begin{align*}
+LL(\textbf{p}) = \log L(\textbf{p}) & = \log \left[ \frac{n!}{x_1! x_2! \dots x_m!} (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m}) \right] \\
+& = \log \frac{n!}{x_1! x_2! \dots x_m!} + \log (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m}) \\
+& = \log n! - \sum_{i=1}^m \log x_i! + \sum_{i=1}^m x_i \log p_i && \text{ such that } \sum_{i=1}^m p_i = 1
+\end{align*}
+++++
+
+* Step 3:
++
+We need to find stem:[(p_1, p_2, \dots, p_m)] that maximizes the function stem:[LL(\textbf{p})] subject to the constraint. using Lagrange multipliers to account for constraint, 
++
+[stem]
+++++
+\begin{align*}
+A(\textbf{p}) & = LL(\textbf{p}) + \lambda \left(  \sum_{i=1}^m p_i -1 \right) \\
+& = \sum_{i=1}^m x_i \log (p_i) + \lambda \left(  \sum_{i=1}^m p_i -1 \right) && \text{ dropping non } p_i \text{ terms}
+\end{align*}
+++++
++
+Differentiate stem:[A(\textbf{p})] w.r.t each stem:[p_i] separately and equate it to 0: Using the property that derivative of a sum is equal to the sum of the derivatives.
++
+[stem]
+++++
+\frac{\partial A(\textbf{p})} {\partial p_i} = x_i \frac{1}{p_i} + \lambda = 0 \Rightarrow p_i = - \frac{x_i}{\lambda}
+++++
++
+Solve for stem:[\lambda] noting stem:[\sum_{i=1}^m x_i = n \text{ and } \sum_{i=1}^m p_i = 1]:
++
+[stem]
+++++
+\sum_{i=1}^m p_i = \sum_{i=1}^m - \frac{x_i}{\lambda} = 1 \Rightarrow 1= - \frac{n}{\lambda} \Rightarrow \lambda = -n
+++++
++
+Substituting stem:[\lambda] into stem:[p_i], which gives us the MLE estimate stem:[\hat{p}_i = \frac{x_i}{n}]. Each stem:[p_i] is just the proportion of outcome stem:[i]. For our example,
++
+[stem]
+++++
+p_1 = \frac{3}{12}; p_2 = \frac{2}{12}; p_3 = \frac{0}{12}; p_4 = \frac{3}{12}; p_5 = \frac{1}{12}; p_6 = \frac{3}{12}
+++++
+
+IMPORTANT: This says we will never ever roll a three. This can't be true. The data is not enough for MLE to come up with good estimates.
