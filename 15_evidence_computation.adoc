@@ -1,0 +1,96 @@
+= Evidence Computation =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Computing the Marginal Likelihood  ==
+The marginal likelihood plays an important role in model selection. The marginal likelihood (or the model evidence) is given by
+
+[stem]
+++++
+\begin{align*}
+p(\mathcal{D} \, | \, M_k) = \int p(\mathcal{D} \, | \, \mathbf{w}_k) \, p(\mathbf{w}_k \, | \, M_k) d\mathbf{w}
+\end{align*}
+++++
+
+Unfortunately, computing the marginal likelihood requires us to solve the an integral over the parameters stem:[\mathbf{w}]. This integration is generally analytically intractable, and we will have to resort to approximation techniques, e.g., numerical integration, Bayesian Monte Carlo techniques, etc.
+
+However, there are special cases in which we can solve it. If we choose a conjugate parameter prior stem:[p(\mathbf{w})], we can compute the marginal likelihood in closed form. In the context of linear regression, we exactly did this.
+
+== A Rough Approximation ==
+We can obtain some insight into the marginal likelihood by making a simple approximation to it. This helps us understand how the marginal likelihood balances between the data fit and model complexity, enforcing Occam's Razor.
+
+We know that the marginal likelihood is precisely the normalizing term that appears in the denominator in Bayes' theorem when evaluating the posterior distribution over parameters.
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{D}) = \frac{p(\mathcal{D} \, | \, \mathbf{w}) \, p(\mathbf{w})}{p(\mathcal{D})}
+++++
+
+The normalization term stem:[p(\mathcal{D})], the marginal likelihood, represents the area under the un-normalized posterior over the parameters stem:[p(\mathbf{w} \, | \, \mathcal{D})]. We can try to approximate this quantity by the following approach.
+
+Consider first the case of a model having a single parameter stem:[w]. The MAP estimate of stem:[w] is given by
+
+[stem]
+++++
+w_{\text{MAP}} = \arg \max_{w} p(\mathcal{D} \, | \, w) \, p(w)
+++++
+
+And we know that this is the mode of the posterior distribution. The value for the mode of the posterior is given by stem:[p(\mathcal{D} \, | \, w_{\text{MAP}}) \, p(w_{\text{MAP}})]. If we assume that the prior is flat with width stem:[\Delta w_{\text{prior}}] so that stem:[p(w) = \frac{1}{\Delta w_{\text{prior}}}], then we have the value for the mode as stem:[p(\mathcal{D} \, | \, w_{\text{MAP}}) \, \frac{1}{\Delta w_{\text{prior}}} ].
+
+
+If we assume that the posterior over the parameters is sharply peaked around the most probable value stem:[w_{\text{MAP}}], with width stem:[\Delta w_{\text{posterior}}], then we can approximate the marginal likelihood by the value of the mode times the width of the posterior. 
+
+[stem]
+++++
+p(\mathcal{D}) = \int p(\mathcal{D} \, | \, w) \, p(w) dw \approx p(\mathcal{D} \, | \, w_{\text{MAP}}) \frac{\Delta w_{\text{posterior}}}{\Delta w_{\text{prior}}}
+++++
+
+This gives the approximate area under the un-normalized posterior distribution over the parameters.
+
+.Image source: Bishop (2006, p. 163)
+image::.\images\evidence_computation_01.png[align='center', 400, 300]
+
+On taking logs we obtain
+
+[stem]
+++++
+\ln p(\mathcal{D}) \approx \ln p(\mathcal{D} \, | \, w_{\text{MAP}}) + \ln \left( \frac{\Delta w_{\text{posterior}}}{\Delta w_{\text{prior}}} \right)
+++++
+
+* The first term represents the fit to the data. If the model is complex, this term will be large because a more complex model is better able to fit the data.
+* The second term penalizes the model according to its complexity. If the model is complex, stem:[\Delta w_{\text{prior}}] will be wide, and stem:[\frac{1}{\Delta w_{\text{prior}}}] will be very small. The ratio stem:[\frac{\Delta w_{\text{posterior}}}{\Delta w_{\text{prior}}}] gets smaller. Because stem:[\Delta w_{\text{posterior}} < \Delta w_{\text{prior}}] this term is negative, and it increases in magnitude as the ratio gets smaller. Thus, if parameters are finely tuned to the data (overfit) in the posterior distribution, then the penalty term is large negative.
+
+For a model having a set of stem:[M] parameters, we can make a similar approximation for each parameter in turn. Assuming that all parameters have the same ratio of stem:[\frac{\Delta w_{\text{posterior}}}{\Delta w_{\text{prior}}}], we obtain
+
+[stem]
+++++
+\ln p(\mathcal{D}) \approx \ln p(\mathcal{D} \, | \, w_{\text{MAP}}) + M \, \, \ln \left( \frac{\Delta w_{\text{posterior}}}{\Delta w_{\text{prior}}} \right)
+++++
+
+Both these terms result in a negative number. Thus, as we increase the complexity of the model, the first term will typically decrease in magnitude, whereas the second term will increase in magnitude linearly with the number stem:[M] of adaptive parameters in the model. The optimal model complexity, as determined by the maximum evidence, will be given by a trade-off between these two competing terms.
+
+== Information Criteria ==
+We can use this approximation of the marginal likelihood to do model selection without actually computing the marginal likelihood or when the marginal likelihood is analytically intractable to compute. There exists a number of heuristics for model selection based on this approximation to the marginal likelihood. They are called information criteria, and we choose the model with the largest value.
+
+The Akaike Information Criterion (AIC) is
+
+[stem]
+++++
+\text{AIC} = \log p(\mathcal{D} \, | \, \hat{\mathbf{w}}_{\text{MAP}}) - M
+++++
+
+This corrects for the bias of the MAP estimator by addition of a penalty term to compensate for the overfitting of more complex models. Here stem:[M] is the number of model parameters.
+
+The Bayesian Information Criterion (BIC) is
+
+[stem]
+++++
+\text{BIC} = \log p(\mathcal{D} \, | \, \hat{\mathbf{w}}_{\text{MAP}}) - \frac{1}{2} M \log N
+++++
+
+where stem:[N] is the number of data points and stem:[M] is the number of model parameters. BIC penalizes model complexity more heavily than AIC.
+
+

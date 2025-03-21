@@ -1,4 +1,4 @@
-= Bayesian Inference =
+= Beta-Bernoulli Model =
 :doctype: book
 :author: Bharath Kumar S P
 :email: bharath030195@gmail.com
@@ -153,10 +153,17 @@ As stem:[\theta] is continuous and it is estimated using the given data, we can 
 p(\tilde{x}=1 \,|\, X=0) = \int p(\tilde{x} =1 \, | \, \theta) \, p(\theta \, | \, X=0) d\theta
 ++++
 
-We can approximate this integral value using <<equation_1, Equation 1>>. This is nothing but the expected value of stem:[p(\tilde{x} =1 \, | \, \theta)] with respect to stem:[\theta] given the data.
+We can approximate this integral value using <<equation_1, Equation 1>>. This is nothing but the expected value of the posterior predictive distribution, stem:[p(\tilde{x} =1 \, | \, \theta)]. The expectation is taken under the distribution stem:[p(\theta \, | \, X=0)].
+
+[stem]
+++++
+\mathbb{E}_{p(\theta \, | \, X=0)} \left[p(\tilde{x} =1 \, | \, \theta) \right] = \int p(\tilde{x} =1 \, | \, \theta) \, p(\theta \, | \, X=0) d\theta
+++++
 
 ====
-We know that the expected value of a continuous random variable stem:[X] is stem:[\mathbb{E}[X\] = \int x \cdot p_X(x) dx]. Here stem:[p(\tilde{x} =1 \, | \, \theta) = \theta]. So in short, we are finding the expected value of stem:[\theta] and the distribution that we use is the posterior distribution for stem:[\theta].
+We know that the expected value of a continuous random variable stem:[X] is stem:[\mathbb{E}[X\] = \int x \cdot p_X(x) dx]. This is the expectation of stem:[X], and it is taken under the distribution stem:[p(X)].
+
+Here stem:[p(\tilde{x} =1 \, | \, \theta) = \theta]. So in short, we are finding the expected value of stem:[\theta] and the distribution that we use is the posterior distribution for stem:[\theta].
 
 [stem]
 ++++
@@ -167,14 +174,13 @@ We know that the expected value of a continuous random variable stem:[X] is stem
 [stem]
 ++++
 \begin{align*}
-p(\tilde{x}=1 \,|\, X=0) & = \mathbb{E}_{\theta | X=0}[p(\tilde{x} =1 \, | \, \theta)] \\
-& = \int_{\theta} p(\tilde{x}=1, \theta \,|\, X=0) d\theta \\
+p(\tilde{x}=1 \,|\, X=0) & = \mathbb{E}_{p(\theta \, | \, X=0)} \left[p(\tilde{x} =1 \, | \, \theta) \right] \\
 & = \int_{\theta} p(\tilde{x}=1 \,|\, \theta) \, p(\theta \,|\, X=0) d\theta \\
 & = \int_0^1 \theta \cdot 2(1-\theta) d\theta = \frac{1}{3}
 \end{align*}
 ++++
 
-Given a dataset, this gives us the prediction for new data point. As we see through Bayesian inference, we get a non-zero probability that it will rain tomorrow.
+Given a dataset, this gives us the prediction for a new data point. As we see through Bayesian inference, we get a non-zero probability that it will rain tomorrow.
 
 == Summary ==
 In general, given a dataset we are interested in making predictions for new data points, stem:[p(\tilde{\mathbf{x}} \,|\, \mathcal{D})].

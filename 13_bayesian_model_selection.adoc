@@ -1,0 +1,259 @@
+= Bayesian Model Selection =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Hyperparameter Optimization ==
+In machine learning, cross-validation is commonly used to tune hyperparameter values or select between alternative models. For example, in polynomial regression, we either:
+
+. Try models of different orders of polynomial or
+. Select a high-order model and set the regularization constant appropriately.
+
+Both approaches involve hyperparameter tuning. A natural question arises: Why don't we optimize hyperparameters alongside model parameters during training? Consider ridge regression, where the objective function is
+
+[stem]
+++++
+E(\mathbf{w}) = \sum_{n=1}^N \left(t_n - w_0 - \sum_{j=1}^D w_j x_{nj} \right)^2 + \frac{\lambda}{2} \sum_{j=1}^D w_j^2
+++++
+
+Can't we minimize this loss function with respect to both stem:[\mathbf{w}] and stem:[\lambda]?
+
+At first glance, optimizing over both stem:[\mathbf{w}] and stem:[\lambda] seems reasonable. However, note that both terms in the objective function are positive quantities. Theoretically, the minimum achievable loss is 0, which occurs when:
+
+* stem:[\lambda = 0] (no regularization), and
+* stem:[\mathbf{w}] perfectly fits the data, leading to overfitting.
+
+Hence, to prevent overfitting, we fix the hyperparameter stem:[\lambda] and learn stem:[\mathbf{w}] from the training data.
+
+**Can we learn hyperparameters without cross-valiadtion?**
+
+Traditional validation-based model selection requires running multiple training processes and choosing the hyperparameter value that performs best on the validation set. However, this approach can be inefficient for small datasets. Instead, can we learn hyperparameters through an optimization problem - without overfitting? If successful, this approach would:
+
+* Eliminate the need for multiple training runs to choose the best hyperparameter value.
+* Provide a principled way to tune hyperparameters within the learning process.
+
+The Bayesian framework gives us a systematic approach for choosing the best model and the hyperparameter values from the training data alone, without recourse to cross-validation.
+
+== Bayesian Model Selection ==
+More complex models are more flexible in the sense that they can be used to describe more datasets. For instance, a polynomial of degree 1 (a line) can only be used to describe linear relations between inputs stem:[x] and observations stem:[t]. A polynomial of degree 2 can additionally describe quadratic relationships between inputs and observations. It is strictly more expressive than a first-order polynomial.
+
+Then we may think that very flexible models are generally preferable to simple models because they are more expressive. But a general problem is that very flexible models can lead to overfitting. So we need to trade off model complexity and data fit. The objective of model selection is to find the simplest model that explains the data reasonably well. This concept is known as **Occam's razor**.
+
+=== The Prior ===
+Let us consider a finite number of models stem:[M = \{M_1, \dots, M_K\}], where each model stem:[M_k] possesses parameters stem:[\mathbf{w}_k]. For example, stem:[M_1] could be a first-order polynomial (a line) having two parameters stem:[w_0, w_1] and stem:[M_2] could be a second-order polynomial (a line) having three parameters stem:[w_0, w_1, w_2]. We shall suppose that the data is generated from one of these models but we are uncertain which one. We can express our uncertainty through a prior probability distribution stem:[p(M)] over the set of models. The corresponding generative process that allows us to generate data from this model is
+
+[stem]
+++++
+\begin{align*}
+M_k & \sim p(M) \\
+\mathbf{w}_k & \sim p(\mathbf{w} \, | \, M_k) \\
+\mathcal{D} & \sim p(\mathcal{D} \, | \, \mathbf{w}_k)
+\end{align*}
+++++
+
+For each model stem:[M_k], there is a distribution stem:[p(\mathbf{w} \, | \, M_k)] on the corresponding model parameters, which is used to generate the data stem:[\mathcal{D}].
+
+=== The Posterior ===
+Given a training set stem:[\mathcal{D}], we apply Bayes' theorem and compute the posterior distribution over models as
+
+[stem]
+++++
+\begin{align*}
+p(M_k \, | \, \mathcal{D}) = \frac{p(\mathcal{D} \, | \, M_k) \, p(M_k)}{p(\mathcal{D})}
+\end{align*}
+++++
+
+where the denominator is stem:[p(\mathcal{D}) = \sum_{k=1}^K p(\mathcal{D} \, | \, M_k) \, p(M_k)] is the normalization constant.
+
+Note that this posterior over models no longer depends on the model parameters stem:[\mathbf{w}_k] because they have been integrated out in the marginal likelihood
+
+[stem, id='equation 1']
+++++
+\begin{align}
+p(\mathcal{D} \, | \, M_k) = \int p(\mathcal{D} \, | \, \mathbf{w}_k) \, p(\mathbf{w}_k \, | \, M_k) d\mathbf{w}
+\end{align}
+++++
+
+which is referred to as the model evidence or marginal likelihood. This provides the likelihood of generating the data set stem:[\mathcal{D}] by a model whose parameters are sampled at random from the prior. It is also interesting to note that the evidence is precisely the normalizing term that appears in the denominator in Bayes' theorem when evaluating the posterior distribution over parameters.
+
+Once we know the posterior distribution over models, the predictive distribution is given by
+
+[stem]
+++++
+\begin{align*}
+p(t_* \, | \, \mathbf{x}_*, \mathcal{D}) & = \sum_{k=1}^K p(t_* \, | \, \mathbf{x}_*, M_k, \mathcal{D}) \, p(M_k \, | \, \mathcal{D}) \\
+& = \sum_{k=1}^K \left( \int p(t_* \, | \, \mathbf{x}_*, \mathbf{w}, M_k) \, p(\mathbf{w} \, | \, M_k, \mathcal{D}) \, d\mathbf{w} \right) \, p(M_k \, | \, \mathcal{D})
+\end{align*}
+++++
+
+where stem:[p(M_k \, | \, \mathcal{D})] is the posterior over models and stem:[p(\mathbf{w} \, | \, M_k, \mathcal{D})] is the posterior over parameters.
+
+The overall predictive distribution is obtained by averaging the predictive distributions of individual models, weighted by the posterior probabilities of those models stem:[p(M_k \, | \, \mathcal{D})]. Instead of selecting the single best model, we average predictions over multiple models.
+
+This procedure is known as **Fully Bayesian model selection or Bayesian model averaging**. This method fully accounts for model uncertainty, and avoids overfitting to a single model. But it requires summing the predictions over all models which is computationally expensive.
+
+A simple approximation to model averaging is to use the single most probable model alone to make predictions. From the posterior, we determine the MAP estimate
+
+[stem]
+++++
+M^* = \arg \max_{M_k} p(M_k \, | \, \mathcal{D})
+++++
+
+With a uniform prior stem:[p(M_k) = \frac{1}{K}], which gives every model equal prior probability, determining the MAP estimate over models amounts to picking the model that maximizes the model evidence (in <<equation_1, Equation 1>>).
+
+[stem]
+++++
+\begin{align*}
+M^* & = \arg \max_{M_k} p(\mathcal{D} \, | \, M_k) \\
+& = \arg \max_{M_k} \int p(\mathcal{D} \, | \, \mathbf{w}_k) \, p(\mathbf{w}_k \, | \, M_k) d\mathbf{w}
+\end{align*}
+++++
+
+This method of selecting the best model by maximizing the marginal likelihood is known as **Empirical Bayes or Type II Maximum Likelihood or Evidence Approximation**.
+
+Once the stem:[M^*] is identified, the predictive distribution can simply be given as
+
+[stem]
+++++
+p(t_* \, | \, \mathbf{x}_*, \mathcal{D}) = \int p(t_* \, | \, \mathbf{x}_*, \mathbf{w}, M^*) \, p(\mathbf{w} \, | \, M^*, \mathcal{D}) \, d\mathbf{w}
+++++
+
+== Marginal Likelihood ==
+How is the marginal likelihood stem:[p(\mathcal{D} \, | \, M_k)] computed for a given model stem:[M_k]:
+
+. We sample a parameter stem:[\mathbf{w}] from the prior distribution stem:[p(\mathbf{w} \, | \, M_k)].
+. For the sampled stem:[\mathbf{w}], we find the likelihood of observing the data stem:[\mathcal{D}].
+. This process is repeated for various samples stem:[\mathbf{w}], and the likelihood is averaged across all stem:[\mathbf{w}]. This results in the marginal likelihood of the data for the given model stem:[M_k].
+
+====
+Comparison of marginal likelihood with the likelihood:
+
+* The term stem:[p(\mathcal{D} \, | \, \mathbf{w}_k)] in <<equation_1, Equation 1>> is the likelihood over the space of parameters that represents how well the given parameter stem:[\mathbf{w}_k] explains the data.
+
+* Similarly, the marginal likelihood stem:[p(\mathcal{D} \, | \, M_k)] can be viewed as a likelihood function over the space of models, in which the parameters have been marginalized out. It represents how well the given model stem:[M_k] describes the data.
+
+If we were to find the model/ hyperparameters that maximize the likelihood alone, we end up with a model / hyperparameter than overfits the data. Instead maximizing the marginal likelihood automatically prevents overfitting.
+
+====
+
+=== Implicit Regularization ===
+How does the marginal likelihood inherently balances model complexity and data fit and favour models of intermediate complexity? Why complex and expressive models turn out to be a less probable choice for modeling a given dataset stem:[\mathcal{D}]?
+
+Let us think of the horizontal axis as a one-dimensional representation of the space of possible data sets, so that each point on this axis corresponds to a specific data set. We now consider three models stem:[M_1, M_2] and stem:[M_3] of successively increasing complexity.
+
+Imagine running these models generatively to produce example data sets, and then looking at the distribution of data sets that result. Any given model can generate a variety of different data sets since the parameters are governed by a prior probability distribution. To generate a particular data set from a specific model, we first choose the values of the parameters from their prior distribution stem:[p(\mathbf{w})], and then for these parameter values we sample the data from stem:[p(\mathcal{D} \, | \, \mathbf{w})].
+
+For example, let stem:[M_1] be a first order polynomial, stem:[y=w_0 + w_1 x]. The value of the parameters stem:[w_0] and stem:[w_1] is first sampled from the prior distribution. Then we generate data with these parameters using the functional form stem:[t=w_0 + w_1 x + \epsilon], where stem:[\epsilon] is the random noise added to the target variable stem:[t].
+
+* A simple model stem:[M_1] can generate a small number of datasets. As it has only two free parameters, it has little variability and so will generate data sets that are fairly similar to each other. It's distribution stem:[p(\mathcal{D})] is therefore confined to a relatively small region of the horizontal axis.
+
+* By contrast, a complex model (such as a ninth order polynomial), which has more free parameters than stem:[M_1], can generate a great variety of different data sets, and so its distribution is spread over a large region of the space of data sets.
+
+Because the distributions stem:[p(\mathcal{D} \, | \, M_k)] are normalized, we see that the particular data set stem:[\mathcal{D}_0] can have the highest value of the evidence for the model of intermediate complexity.
+
+.Image source: Bishop (2006, p. 164)
+image::.\images\bayes_model_selection_03.png[align='center', 400, 300]
+
+====
+* Complex models can generate more datasets with a smaller probability of generating each data.
+* Simpler models can generate only a small number of datasets, but with a larger probability.
+====
+
+The model stem:[M_1] and stem:[M_3] doesn't describe the data set stem:[\mathcal{D}_0] as well as stem:[M_2]. Thus, the marginal likelihood automatically embodies a trade-off between model complexity and data fit.
+
+=== Example ===
+Suppose the data points (in red) were generated by a quadratic function. Let's use the Bayesian model selection approach to find the model of the right order.
+
+image::.\images\bayes_model_selection_01.png[align='center', 500, 400]
+
+* Let stem:[M_1] be first order polynomial functions. Then each stem:[\mathbf{w}] that we sample from the prior distribution represents a line. Irrespective of whatever stem:[\mathbf{w}] we choose, the likelihood stem:[p(\mathcal{D} \, | \, M_1)] will be very small, because the models stem:[M_1] do not fit the data well. Even the best sample (shown in blue) will not be able to explain the data well. Therefore, the resulting marginal likelihood will be lower.
+
+* Let stem:[M_7] be 7th-order polynomials. Then each stem:[\mathbf{w}] that we sample from the prior distribution represents a 5th-order polynomial curve. In this case, there exists a very few stem:[\mathbf{w}]s that result in a curve passing through all the data points. So there are only a few stem:[\mathbf{w}]s that could give high likelihood stem:[p(\mathcal{D} \, | \, M_7)], but as the space for stem:[\mathbf{w}] is large, sampling those stem:[\mathbf{w}] is very less likely, i.e., stem:[p(\mathbf{w})] is low. Therefore, the resulting marginal likelihood will be lower.
+
+* Let stem:[M_2] be quadratic functions. Then each stem:[\mathbf{w}] that we sample from the prior distribution represents a quadratic curve. In this case, it is more likely to sample stem:[\mathbf{w}]s that result in curves passing through all data points sufficiently close enough. So there are more stem:[p(\mathbf{w})]s that could give high likelihood stem:[p(\mathcal{D} \, | \, M_2)], and the probability of sampling those stem:[p(\mathbf{w})] is also high. Hence, the resulting marginal likelihood will be higher for stem:[M_2].
+
+This way the marginal likelihood helps us choosing the right model without under and over-fitting.
+
+We can use this approach to compare models directly on the training data, without the need for a validation set. This allows all available data stem:[\mathcal{D}] to be used for both
+
+. Training, i.e., for computing the posterior distribution over stem:[\mathbf{w}].
+. And also for model selection / hyper-parameter tuning, avoiding multiple training runs for each model as with cross-validation.
+
+== Bayes Factors for Model Comparison ==
+Consider the problem of comparing two probabilistic model stem:[M_1] and stem:[M_2], given a dataset stem:[\mathcal{D}]. If we compute the posteriors stem:[p(M_1 \, | \, \mathcal{D})] and stem:[p(M_2 \, | \, \mathcal{D})], we can compute the ratio of the posteriors
+
+[stem]
+++++
+\frac{p(M_1 \, | \, \mathcal{D})}{p(M_2 \, | \, \mathcal{D})} = \frac{p(\mathcal{D}  \, | \, M_1) \, p(M_1)}{p(\mathcal{D})} / \frac{p(\mathcal{D}  \, | \, M_2) \, p(M_2) }{p(\mathcal{D})} = \frac{p(M_1)}{p(M_2)} \, \frac{p(\mathcal{D}  \, | \, M_1)}{p(\mathcal{D}  \, | \, M_2)}
+++++
+
+* The ratio of the posteriors is also called the posterior odds.
+* The first fraction on the RHS, the prior odds, measures how much our prior beliefs favour stem:[M_1] over stem:[M_2].
+* The ratio of the marginal likelihoods is called the *Bayes factor* and measures how likely the data stem:[\mathcal{D}] is generated by stem:[M_1] compared to stem:[M_2].
+
+If we choose a uniform prior over models, the prior odds term is 1, i.e., the posterior odds is the ratio of the marginal likelihoods (Bayes factor). If the Bayes factor is greater than 1, we choose model stem:[M_1], otherwise model stem:[M_2].
+
+== Optimize Hyperparameters ==
+For a given model stem:[M_k], we can optimize the hyperparameters by following the same principle. Say for a given model, we have two hyperparameters stem:[\alpha] and stem:[\beta].
+
+*Prior:* We assume a prior distribution over the hyperparameters, stem:[p(\alpha, \beta)]. These are called hyperpriors.
+
+*Posterior:* Given a training set stem:[\mathcal{D}], we apply Bayes' theorem and compute the posterior distribution over hyperparameters
+
+[stem]
+++++
+p(\alpha, \beta \, | \, \mathcal{D}) = \frac{p( \mathcal{D} \, | \, \alpha, \beta) \, p(\alpha, \beta)}{p(\mathcal{D})}
+++++
+
+where the denominator stem:[p(\mathcal{D}) = \int \int p( \mathcal{D} \, | \, \alpha, \beta) \, p(\alpha, \beta) d\alpha d\beta ] is the normalization constant. 
+
+This posterior over hyperparameters no longer depends on the model parameters stem:[\mathbf{w}_k] because they have been integrated out in the marginal likelihood
+
+[stem]
+++++
+\begin{align*}
+p(\mathcal{D} \, | \, \alpha, \beta) = \int p(\mathcal{D} \, | \, \mathbf{w}_k) \, p(\mathbf{w}_k \, | \,\alpha, \beta) d\mathbf{w}
+\end{align*}
+++++
+
+which is the marginal likelihood. Once we know the posterior distribution over hyperparameters, the predictive distribution is given by
+
+[stem]
+++++
+p(t_* \, | \, \mathbf{x}_*, \mathcal{D}) = \int \int \int p(t_* \, | \, \mathbf{x}_*, \alpha, \beta, \mathbf{w} ) \, p(\mathbf{w} \, | \, \alpha, \beta, \mathcal{D}) \, p(\alpha, \beta  \, | \, \mathcal{D}) d\mathbf{w} d\alpha d\beta
+++++
+
+where stem:[p(\alpha, \beta  \, | \, \mathcal{D})] is the posterior over hyperparameters and stem:[p(\mathbf{w} \, | \, \alpha, \beta, \mathcal{D})] is the posterior over model parameters.
+
+This is a fully Bayesian treatment. This method fully accounts for hyperparameter uncertainty, and avoids overfitting to a single value. But the complete marginalization over all of these variables is analytically intractable. So we should resort to some approximation.
+
+A simple approximation to averaging is to use the single most probable value alone to make predictions. From the posterior, we determine the MAP estimate
+
+[stem]
+++++
+\begin{align*}
+\alpha^* & = \arg \max_{\alpha} p(\alpha, \beta \, | \, \mathcal{D}) \\
+\beta^* & = \arg \max_{\beta} p(\alpha, \beta \, | \, \mathcal{D}) \\
+\end{align*}
+++++
+
+If the prior is relatively flat, determining the MAP estimate over hyperparameter values amounts to picking the values that maximizes the marginal likelihood function.
+
+[stem]
+++++
+\begin{align*}
+\alpha^* & = \arg \max_{\alpha} p(\mathcal{D} \, | \, \alpha, \beta) \\
+\beta^* & = \arg \max_{\beta} p(\mathcal{D} \, | \, \alpha, \beta) \\
+\end{align*}
+++++
+
+We can even optimize them jointly. This method of selecting the best hyperparameter value by maximizing the marginal likelihood is known as **Empirical Bayes or Type II Maximum Likelihood or Evidence Approximation**.
+
+Then, the predictive distribution can be given by
+
+[stem]
+++++
+p(t_* \, | \, \mathbf{x}_*, \mathcal{D}) = \int p(t_* \, | \, \mathbf{x}_*,  \mathbf{w}, \alpha^*, \beta^*) \, p(\mathbf{w} \, | \, \alpha^*, \beta^*, \mathcal{D}) d\mathbf{w}
+++++

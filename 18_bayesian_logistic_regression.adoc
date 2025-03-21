@@ -1,0 +1,107 @@
+= Bayesian Logistic Regression =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Introduction ==
+In some modelling situations, there exists no conjugacy between the prior and the likelihood. Thus, we don't obtain the posterior in a closed form. In such cases, we use some approximate inference techniques to learn the posterior. One such model is the Bayesian variant of logistic regression.
+
+== Likelihood ==
+We are given a training set stem:[\mathcal{D} = \{(\mathbf{x}_1, t_1), (\mathbf{x}_2, t_2), \dots, (\mathbf{x}_N, t_N)\}], where stem:[\mathbf{x}_n \in \mathbb{R}^D, t_n \in \mathbb{Z}^+]. In logistic regression, we model
+
+[stem]
+++++
+P(t_n = 1 | \mathbf{x}_n) = \sigma(\mathbf{w}^\top \boldsymbol{\phi}(\mathbf{x}_n)) = \frac{1}{1 + \text{exp}(-\mathbf{w}^\top \boldsymbol{\phi}(\mathbf{x}_n))}
+++++
+
+We let stem:[y_n = \sigma(\mathbf{w}^\top \boldsymbol{\phi}(\mathbf{x}_n))]. And learn the parameters stem:[\mathbf{w}] by maximizing the likelihood:
+
+[stem]
+++++
+L(\mathbf{w}) = p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) = \prod_{n=1}^N y_n^{t_n} (1-y_n)^{1-t_n}
+++++
+
+On taking the negative of logarithm of the likelihood, we get the binary cross-entropy loss
+
+[stem]
+++++
+E(\mathbf{w}) = -\ln L(\mathbf{w}) = - \sum_{n=1}^N \left\{ t_n \, \ln y_n + (1-t_n) \, \ln (1-y_n) \right\}
+++++
+
+We minimize this function with respect to stem:[\mathbf{w}] using iterative methods. This gives us the MLE estimate of stem:[\mathbf{w}].
+
+== Prior Distribution ==
+A prior can be considered over the parameters stem:[\mathbf{w}]. Let's assume a joint Gaussian prior, stem:[\mathbf{w} \sim \mathcal{N}(\mathbf{m}_0, \mathbf{S}_0)], where stem:[\mathbf{m}_0] is the mean stem:[D]-dimensional vector and stem:[\mathbf{S}_0] is the variance-covariance stem:[D \times D] matrix.
+
+[stem, id='equation_1']
+++++
+\begin{align}
+p{(\mathbf{w})} & = \frac{1}{\sqrt{(2\pi)^D |\mathbf{S}_0|}} \text{exp} \left( - \frac{1}{2} (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0)  \right) \nonumber \\
+\log p(\mathbf{w}) & = \log \left( \frac{1}{\sqrt{(2\pi)^D |\mathbf{S}_0|}} \right) + \left( - \frac{1}{2} (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0)  \right) \nonumber \\
+& = - \frac{1}{2} (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0) + \text{const} \\
+\end{align}
+++++
+
+== Posterior Distribution ==
+We compute the posterior over the parameters using Bayes' theorem as
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) = \frac{p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) \cdot p(\mathbf{w})}{p(\mathcal{T} \, | \, \mathcal{X})}
+++++
+
+where stem:[\mathcal{X}] is the set of training inputs and stem:[\mathcal{T}] the collection of corresponding training targets.
+
+* stem:[p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w})] is the likelihood.
+* stem:[p(\mathbf{w})] is the parameter prior.
+* The denominator term is the marginal likelihood or evidence.
+
+The mode of the posterior is the MAP estimate
+
+[stem]
+++++
+\hat{\mathbf{w}}_{\text{MAP}} = \underset{\mathbf{w}}{\operatorname{argmax }} \text{ } \left( \log (p(\mathbf{w})) + \sum_{i=1}^N \log p(\mathcal{T}| \, \mathcal{X}, \mathbf{w}) \right)
+++++
+
+In the Bayesian setup, we would like to compute the full posterior distribution. However, in this case, it is not possible to obtain the posterior in a closed form because the functional form of the likelihood and the prior are different. The functional form of the
+
+* The Likelihood contains the terms such as stem:[\frac{1}{1 + \text{exp}(-\mathbf{w}^\top \boldsymbol{\phi}(\mathbf{x}_n))}], and 
+* The prior contains the term stem:[\frac{1}{\sqrt{(2\pi)^D}} \text{exp} \left( - \frac{\mathbf{w}^\top \mathbf{w}}{2} \right)] (on assuming mean stem:[\mathbf{0}] and identity variance).
+
+The way in which the parameter stem:[\mathbf{w}] appears in both is different. Thus, we cannot compute the posterior in a closed form. The posterior is not a Gaussian.
+
+Our end objective is to use this posterior distribution over the parameters to get the predictive posterior distribution for the test point stem:[\mathbf{x}^*]:
+
+[stem]
+++++
+\begin{align*}
+p(t^* \, | \, \mathbf{x}^*, \mathcal{X}, \mathcal{T}) & = \int p(t^* \, | \, \mathbf{x}^*, \mathbf{w}) \, p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) \, d\mathbf{w} \\
+& = \mathbf{E}_{p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})}[p(t^* \, | \, \mathbf{x}^*, \mathbf{w})] \\
+& \approx \frac{1}{M} \sum_{i=1}^M p(t^* \, | \, \mathbf{x}^*, \mathbf{w}_i)
+\end{align*}
+++++
+
+The last step is the approximation of the integral, which can be obtained by sampling stem:[\mathbf{w}] from the posterior stem:[p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})] and use the sampled values stem:[\mathbf{w}_i]'s to approximate the predictive posterior.
+
+In cases where the posterior distribution over the parameters is infeasible to obtain in a closed form, we can use either of the two approaches to come up with the approximate posterior predictive distribution:
+
+. Sampling based techniques such as rejection sampling, importance sampling, Markov Chain Monte Carlo (MCMC) sampling, etc. These techniques help us get samples from the posterior distribution. Note here we do not have mathematical expression for the posterior distribution, so we use these special techniques to get the samples.
+
+. Approximate the actual posterior distribution as a probability distribution stem:[q(\mathbf{w})] from which it is easy to sample from. The distribution stem:[q(\mathbf{w})] can be a Gaussian, Beta, Multinomial, etc. depending on the values that stem:[\mathbf{w}] take. In a Bayesian logistic regression case, stem:[w]s take values from stem:[-\infty] to stem:[\infty]. So we can approximate the actual posterior as a Gaussian.
++
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) \approx q(\mathbf{w})
+++++
++
+where stem:[q(\mathbf{w})] follows a Gaussian distribution. For example, in the single parameter case, the behaviour of the actual posterior (which we cannot write in a mathematical expression) can have the form as below. We approximate it as a Gaussian around the mode of the posterior.
++
+image::.\images\laplace_approx_01.png[align='center', 200, 200]
++
+This method is known as the *Laplace Approximation*. This method tries to approximate as a Gaussian and ensures that the mean of the Gaussian and the mode of the posterior are the same.
++
+Since most of the mass/density is around the mode, we approximate the posterior around the mode. We can also approximate as a distribution that covers as much posterior density as possible. The idea is to come up with an approximate distribution that very well approximates the posterior. Another way to achieve this is to learn the parameters of the approximation distribution in a way that minimizes some kind of distance (say KL divergence) between the posterior and the approximation distribution, stem:[\text{KL}(q(\mathbf{w}) || p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}))].
+
+

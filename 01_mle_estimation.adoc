@@ -1,33 +1,34 @@
 = Maximum Likelihood Estimation =
 :doctype: book
-:author: Bharath Kumar S P
-:email: bharath030195@gmail.com
 :stem: latexmath
 :eqnums:
 :toc:
 
+Ever wondered how we find the best possible parameters for a model? MLE - the gold standard for parameter estimation.
+
 == Estimation ==
-Given any data, we may want to model the distribution from which the data is getting generated, i.e.
+When given a dataset, we often seek to model the distribution from which the data is generated. This involves two key steps:
 
-. We need to choose the right distribution (or model) to fit to the data. This is known as model selection problem.
-. Then we need to estimate the parameters of the chosen distribution (or model in the case of parametric models). This is known as parameter estimation problem. 
+. *Model Selection*: Choosing an appropriate distribution (or model) that best fits the data.
+. *Parameter Estimation*: Estimating the parameters of the chosen distribution (for parametric models).
 
-Any statistic used to estimate the value of an unknown parameter stem:[\theta] is called an estimator of stem:[\theta]. The estimate stem:[\hat{\boldsymbol{\theta}}] is a random variable estimating stem:[\boldsymbol{\theta}] from the data. There are mainly three techniques to do parameter estimation:
+Any statistic used to estimate an unknown parameter, denoted as stem:[\theta], is called an estimator of stem:[\theta]. The estimate stem:[\hat{\boldsymbol{\theta}}] is a random variable that approximates stem:[\boldsymbol{\theta}] based on the data. There are four primary techniques for parameter estimation:
 
 . Unbiased estimators
-. Maximum likelihood estimation: It is a method for estimating parameters of a distribution from sample data such that the likelihood of obtaining the observed data is maximized.
+. Maximum Likelihood Estimation (MLE): A method that estimates the parameters of a distribution by maximizing the likelihood of the observed data.
+. Maximum A Posteriori estimation (MAP)
 . Bayesian estimation
 
 == Unbiased Estimators ==
-Let stem:[(X_1, X_2, \dots, X_n)] are stem:[n] i.i.d random variables, where stem:[X_i] are drawn from distribution stem:[F] with stem:[\mathrm{E}[X_i\] = \mu] and stem:[\mathrm{Var}(X_i) = \sigma^2].
+Let stem:[(X_1, X_2, \dots, X_n)] be stem:[n] independent and identically distributed (i.i.d) random variables, where each stem:[X_i] is drawn from a distribution stem:[F] with expected value stem:[\mathrm{E}[X_i\] = \mu] and variance stem:[\mathrm{Var}(X_i) = \sigma^2]. Two common unbiased estimators are:
 
-. Sample mean: stem:[\bar{X} = \frac{1}{n} \sum_{i=1}^n X_i] is an unbiased estimate of stem:[\mu].
-. Sample variance: stem:[S^2 = \frac{1}{n-1} \sum_{i=1}^n (X_i - \bar{X})^2] is an unbiased estimate of stem:[\sigma^2].
+. Sample mean: stem:[\bar{X} = \frac{1}{n} \sum_{i=1}^n X_i] is an unbiased estimator of stem:[\mu].
+. Sample variance: stem:[S^2 = \frac{1}{n-1} \sum_{i=1}^n (X_i - \bar{X})^2] is an unbiased estimator of stem:[\sigma^2].
 
-This applies to any given data from any distribution. We can estimate the mean and variance of the distribution with these estimators. If we want to model the data as Gaussian distribution, then we can simply use the above estimators to estimate its parameters. But not all distributions have mean and variance as their parameters. So it not a very general method than can be used for parameter estimation.
+These estimators can be applied to data from any distribution to estimate its mean and variance. For example, if we assume the data follows a Gaussian distribution, we can use these estimators to estimate its parameters. However, not all distributions have mean and variance as their parameters, making this approach limited in its general applicability to parameter estimation.
 
-== Likelihood of Data - Example ==
-Consider a sample of stem:[n] i.i.d random variables stem:[(X_1, X_2, \dots, X_n)]. Note it is a random vector. So the joint distribution PDF or PMF of the random variables is given by stem:[f(X_1, X_2, \dots, X_n)]. Since the random variables stem:[X_i]'s are identical and independent, the distribution can be characterized by parameter stem:[\theta] and their joint distribution can also be written as:
+== Likelihood of Data ==
+Consider a sample of stem:[n] independent and identically distributed (i.i.d.) random variables stem:[(X_1, X_2, \dots, X_n)]. Since this forms a random vector, the joint probability density function (PDF) or probability mass function (PMF) of these random variables is given by: stem:[f(X_1, X_2, \dots, X_n)]. Since stem:[X_i]'s are identical and independent, their distribution can be characterized by a parameter stem:[\theta], and the joint distribution can be written as:
 
 [stem]
 ++++
@@ -37,9 +38,11 @@ f(X_1, X_2, \dots, X_n \, | \, \theta) = \prod_{i=1}^{n} f(X_i \, | \, \theta)
 * For discrete distributions, we consider the probability of stem:[x_i], stem:[f(X_i) = P(X_i = x_i)]
 * For continuous distributions, we consider the density value at stem:[x_i], stem:[f(X_i) = f(X_i=x_i)]
 
-Consider that each stem:[X_i] was drawn from distribution stem:[\texttt{Ber}(p)] with unknown parameter stem:[p]. This means the PMF of each random variable is stem:[f(X_i=x_i) = p^{x_i} (1-p)^{(1- x_i)}], which inturn means stem:[f(X_i =1) = p \text{ and } f(X_i =0) = 1-p].
+*Observed Data Example:*
 
-Say stem:[n=10] and the observed data is stem:[[0,0,1,1,1,1,1,1,1,1\]].
+Suppose each stem:[X_i] was drawn from a distribution stem:[\texttt{Ber}(p)] with an unknown parameter stem:[p]. Then the PMF of each stem:[X_i] is stem:[f(X_i=x_i) = p^{x_i} (1-p)^{(1- x_i)}], which means stem:[f(X_i =1) = p \text{ and } f(X_i =0) = 1-p].
+
+Let stem:[n=10] and suppose we observe the data: stem:[[0,0,1,1,1,1,1,1,1,1\]]. For the given data, we get:
 
 [stem]
 ++++
@@ -50,131 +53,96 @@ f([0,0,1,1,1,1,1,1,1,1] | p) & = \prod_{i=1}^{n} f(X_i \, | \, p) \\
 \end{align*}
 ++++
 
-This is called as the likelihood function stem:[L(p)]. For each parameter value stem:[p], we calculate the likelihood. Thus likelihood function is a function of stem:[p], given the observed data. We can plot the likelihood for different values of the parameter, which gives us the information such as "if stem:[p=0.4], how likely is the observed data?"
+The above function is called the likelihood function, denoted as stem:[L(p)]. For each parameter value stem:[p], we compute the likelihood. Thus, the likelihood function is a function of stem:[p], given the observed data. By plotting the likelihood for different values of stem:[p], we gain insights such as: "if stem:[p=0.4], how likely is the observed data?"
 
 ====
-*How to read this?* 
+*How to interpret the likelihood?* 
 
-stem:[L(p = 0.4) = 0.000236]:
+For example,
 
-The likelihood of observing the sample data under the parameter stem:[p=0.4] is 0.000236.
+[stem]
+++++
+L(p = 0.4) = 0.000236
+++++
+
+This means that the likelihood of observing the given sample when stem:[p=0.4] is 0.000236.
 ====
 
-We do this for all stem:[p] and choose the one that makes our data as likely as possible. NOTE: Likelihoods do not have to integrate (or sum) to 1, unlike probabilities.
+WARNING: Likelihoods do not have to sum or integrate to 1, unlike probabilities. Instead, they help us compare how well different parameter values explain the observed data.
 
-== General Setting ==
-Consider a sample of stem:[n] i.i.d random variables stem:[(X_1, X_2, \dots, X_n)]. Each stem:[X_i] was drawn from a distribution with density (or mass) function stem:[f(X_i | \theta)]. And the observed data is: stem:[(x_1, x_2, \dots, x_n)].
+== MLE Estimation ==
+Consider a sample of stem:[n] i.i.d random variables stem:[(X_1, X_2, \dots, X_n)]. Each stem:[X_i] is drawn from a distribution with density (or mass) function stem:[f(x_i |\,  \boldsymbol{\theta})], where stem:[\boldsymbol{\theta} = (\theta_1, \theta_2, \dots, \theta_k)]. The PMF or PDF gives the likelihood of a single data point stem:[x_i] given parameter stem:[\boldsymbol{\theta}]. Here we are given a set of observed i.i.d data points stem:[(x_1, x_2, \dots, x_n)] and we seek to answer:
 
-We try to answer: How likely is the observed data stem:[(x_1, x_2, \dots, x_n)] given parameter stem:[\theta]?. Likelihood function, stem:[L(\theta)]:
+How likely is the observed data stem:[(x_1, x_2, \dots, x_n)] given parameter stem:[\boldsymbol{\theta}]?
 
-[stem]
-++++
-L(\theta) = f(x_1, x_2, \dots, x_n | \theta) = \prod_{i=1}^{n} f(X_i=x_i | \theta)
-++++
-
-The Maximum Likelihood Estimator (MLE) of stem:[\theta] is the value of stem:[\theta] that maximizes stem:[L(\theta)]. It gives that stem:[\theta] which maximizes the likelihood of our sample data (i.e.,) the parameter value that makes the data look as likely as possible.
+The likelihood of all the observed data points is given by the likelihood function, denoted by stem:[L(\boldsymbol{\theta})], which is defined as
 
 [stem]
 ++++
-\hat{\theta}_{\text{MLE}} = \underset{\theta}{\mathrm{arg max}}\, L(\theta)
+L(\boldsymbol{\theta}) = f(x_1, x_2, \dots, x_n | \boldsymbol{\theta}) = \prod_{i=1}^{n} f(X_i=x_i | \boldsymbol{\theta})
 ++++
 
-=== Arg Max ===
-stem:[\underset{x}{\mathrm{arg max}}\, f(x)]: the argument stem:[x] that maximizes the function stem:[f(x)]. Let stem:[f(x)=-x^2+4] where stem:[-2 < x < 2].
+NOTE: As the data points are i.i.d, we can multiply their probabilities.
 
-image::.\images\arg_max_01.png[align='center',300, 300]
-
-In the given interval, the maximum value that the function takes is 4 and the corresponding stem:[x] is 0. So stem:[\underset{x}{\mathrm{arg max}}\, f(x) = 0]. How do we find this? Let stem:[\hat{x} = \underset{x}{\mathrm{arg max}}\, f(x)]
-
-. Differentiate the function with respect to that argmax's argument:
-+
-[stem]
-++++
-\frac{d}{{dx}}\left( {f\left( x \right)} \right) = \frac{d}{{dx}} (-x^2 + 4) = -2x
-++++
-
-. Set it to 0 and solve.
-+
-stem:[2x=0 \rightarrow \hat{x}=0]
-
-Now let's consider the log of stem:[f(x)] as the function. And we need to find stem:[\underset{x}{\mathrm{arg max}}\, \log f(x)].
-
-image::.\images\arg_max_02.png[align='center',300, 300]
-
-We know that for stem:[\log_b x] and stem:[b>1], the log is a strictly increasing function (i.e.,) if stem:[x_1 < x_2 \Leftrightarrow \log x_1 < \log x_2]. So for all stem:[x_1, x_2] where stem:[x_1, x_2 >0 \text{ and } x_1 \ne x_2], if stem:[f(x_1) < f(x_2)], then stem:[\log f(x_1) < \log f(x_2)].
-
-Then we can say that,
+The Maximum Likelihood Estimator (MLE) of stem:[\boldsymbol{\theta}] is the value of stem:[\boldsymbol{\theta}] that maximizes stem:[L(\boldsymbol{\theta})], i.e., the value that makes the observed data look as likely as possible.
 
 [stem]
 ++++
-\underset{x}{\mathrm{arg max}}\, f(x) = \underset{x}{\mathrm{arg max}}\, \log f(x)
+\hat{\boldsymbol{\theta}}_{\text{MLE}} = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, L(\boldsymbol{\theta})
 ++++
 
-The argument that maximizes stem:[f(x)] is the same as the argument that maximizes stem:[\log f(x)]. We often maximize the log (natural log) of the objective function for numerical stability.
+We know that stem:[\log] is a strictly increasing function (i.e.,) if stem:[x_1 < x_2 \Leftrightarrow \log x_1 < \log x_2]. So for all stem:[x_1, x_2] where stem:[x_1, x_2 >0 \text{ and } x_1 \ne x_2], if stem:[f(x_1) < f(x_2)], then stem:[\log f(x_1) < \log f(x_2)], for any function stem:[f].
 
-=== Log-Likelihood Function ===
-[stem]
-++++
-L(\theta) = \prod_{i=1}^{n} f(X_i=x_i | \theta)
-++++
-
-On taking log on both the sides,
+Taking log (natural log) on both sides of the likelihood equation,
 
 [stem]
 ++++
-LL(\theta) = \log L(\theta) = \log \left( \prod_{i=1}^{n} f(X_i=x_i | \theta) \right) = \sum_{i=1}^n \log f(X_i=x_i | \theta)
+LL(\boldsymbol{\theta}) = \log L(\boldsymbol{\theta}) = \log \left( \prod_{i=1}^{n} f(X_i=x_i | \boldsymbol{\theta}) \right) = \sum_{i=1}^n \log f(X_i=x_i | \boldsymbol{\theta})
 ++++
 
-stem:[LL(\theta)] is often easier to differentiate than stem:[L(\theta)]. And note here that,
-
-[stem]
-++++
-\underset{\theta}{\mathrm{arg max}}\, L(\theta) = \underset{\theta}{\mathrm{arg max}}\, LL(\theta)
-++++
-
-== Steps to find MLE of stem:[\theta] ==
-Consider a sample of stem:[n] i.i.d random variables stem:[(X_1, X_2, \dots, X_n)]. Each stem:[X_i] was drawn from a distribution with density (or mass) function stem:[f(X_i | \boldsymbol{\theta})], where stem:[\boldsymbol{\theta} = (\theta_1, \theta_2, \dots, \theta_k)]. Given the observed data stem:[(x_1, x_2, \dots, x_n)], we need to find an estimate of stem:[\boldsymbol{\theta}].
+Since log is monotonic, maximizing stem:[L(\boldsymbol{\theta})] is equivalent to maximizing stem:[LL(\boldsymbol{\theta})], i.e., the argument that maximizes stem:[L(\boldsymbol{\theta})] is the same as the argument that maximizes stem:[LL(\boldsymbol{\theta})]. We often maximize the log likelihood for numerical stability.
 
 [stem]
 ++++
-\hat{\boldsymbol{\theta}}_{\text{MLE}} = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, LL(\boldsymbol{\theta})
+\hat{\boldsymbol{\theta}}_{\text{MLE}} = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, L(\boldsymbol{\theta}) = \underset{\boldsymbol{\theta}}{\mathrm{arg max}}\, LL(\boldsymbol{\theta})
 ++++
 
-. Decide on a model for the distribution of our samples, for example, assume that our data is Gaussian, Bernoulli, etc. Define the PMF or PDF of one stem:[X_i], this gives the likelihood of a single data point stem:[x_i]. Then write the likelihood of all the data.
-+
-[stem]
-++++
-L(\theta) = f(x_1, x_2, \dots, x_n \,|\, \theta) = \prod_{i=1}^{n} f(X_i=x_i \,|\, \theta)
-++++
+=== Solving the Optimization Problem ===
+There are various methods to solve this optimization problem, and the choice of method depends on the specific problem at hand. A simple approach, when feasible, is to set the derivative to zero and solve for the optimal value.
 
-. Write out the log-likelihood function, stem:[LL(\boldsymbol{\theta})]:
-+
-[stem]
-++++
-LL(\boldsymbol{\theta}) = \sum_{i=1}^n \log f(X_i=x_i \,|\, \boldsymbol{\theta})
-++++
+Since the log-likelihood function is often easier to differentiate than the likelihood function, we work with the log-likelihood instead.
 
-. Differentiate stem:[LL(\boldsymbol{\theta})] w.r.t each stem:[\theta]:
-+
+To find the MLE, we differentiate stem:[LL(\boldsymbol{\theta})] with respect to each parameter stem:[\theta_i].
+
 [stem]
 ++++
 \frac{\partial}{\partial \theta_1} LL(\boldsymbol{\theta}), \frac{\partial}{\partial \theta_2} LL(\boldsymbol{\theta}), \dots , \frac{\partial}{\partial \theta_k} LL(\boldsymbol{\theta})
 ++++
 
-. To maximize, set each to 0:
-+
+Setting each derivative to zero gives the system of equations:
+
 [stem]
 ++++
 \begin{align*}
-\frac{\partial}{\partial \theta_1} LL(\boldsymbol{\theta}) & = 0 \\
-\frac{\partial}{\partial \theta_2} LL(\boldsymbol{\theta}) & = 0 \\
+\frac{\partial}{\partial \theta_1} LL(\boldsymbol{\theta}) & = \textbf{0} \\
+\frac{\partial}{\partial \theta_2} LL(\boldsymbol{\theta}) & = \textbf{0} \\
 \dots \\
-\frac{\partial}{\partial \theta_k} LL(\boldsymbol{\theta}) & = 0
+\frac{\partial}{\partial \theta_k} LL(\boldsymbol{\theta}) & = \textbf{0}
 \end{align*}
 ++++
-+
-We get stem:[k] equations with stem:[k] unknowns. Solve the resulting simultaneous equations (algebraically or using computer) to get the stem:[\hat{\theta}_{\text{MLE}}] for each stem:[\theta]. We get that stem:[\boldsymbol{\theta}] which maximizes the probability of seeing the given observations.
 
-+
-NOTE: We cannot always find the argmax by setting up the equations to zero. In some cases, we may need to use some numerical optimization algorithms.
+This results in stem:[k] equations with stem:[k] unknowns, which can be solved algebraically or computationally to obtain stem:[\hat{\theta}_{\text{MLE}}] for each stem:[\theta_i]. Thus, we obtain the parameter values stem:[\boldsymbol{\theta}] that maximize the likelihood of observing the given data.
+
+[CAUTION]
+====
+
+Setting derivatives to zero does not always guarantee a maximum. In some cases, additional checks (e.g., second derivative tests) may be required. Furthermore, when an analytical solution is difficult or impossible, we may need to use numerical optimization techniques, such as:
+
+* Gradient Descent
+* Newton-Raphson Method
+* Expectation-Maximization (EM) Algorithm (for latent variable models)
+
+These iterative methods help find the MLE when closed-form solutions are intractable.
+
+====
 

@@ -1,0 +1,225 @@
+= Dirichlet-Multinomial Model =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+In the Beta-Bernoulli model, our data point was a random variable that takes two values. We can extend this concept to a random variable that takes more than two discrete values. Such variables are categorical random variables.
+
+In categorical RV case, the experiment is conducted once, and one outcome is observed from stem:[K] possible outcomes. If we repeat the trials stem:[N] times and count the number of trials with each outcome, we get a multinomial RV, stem:[\mathbf{X} \sim \text{Multinomial}(N,\boldsymbol{\theta})].
+
+Suppose we observe stem:[N] dice rolls, stem:[\mathcal{D}=\{x_1, \dots, x_N\}], where stem:[x_i \in \{1,\dots, K\}] for stem:[i=1, \dots, N]. Each stem:[X_i] can be modelled as a categorical random variable. stem:[X_i \sim \text{Categorical}(\boldsymbol{\theta})], where stem:[\boldsymbol{\theta}] is a probability vector stem:[\boldsymbol{\theta} = [\theta_1, \dots, \theta_K\]] and stem:[\sum_{k=1}^K \theta_k =1].
+
+[stem]
+++++
+p_{X_i}(x_i) = \begin{cases}
+        \theta_1, & x_i=1,\\
+        \theta_2, & x_i=2, \\
+        \dots, \\
+        \theta_K, & x_i=K, \\
+        0, & \text{otherwise}.
+    \end{cases} = \prod_{k=1}^K \theta_k^{\mathbb{1}[x=k]}
+++++
+
+where stem:[\theta_k] represents the probability of seeing stem:[k]th category.
+
+== Likelihood ==
+If we assume the given data is iid, the likelihood has the form
+
+[stem]
+++++
+p(\mathcal{D} \, | \, \boldsymbol{\theta}) = \prod_{i=1}^K \theta_k^{N_k}
+++++
+
+where stem:[N_k] is the number of times event stem:[k] occurred out of stem:[N] trials.
+
+Now suppose the data consists of the number of times each face showed up stem:[\mathbf{X} = \{N_1, N_2, \dots, N_k\}] in a total of stem:[N] trials. In this case, we have stem:[\mathbf{X} \sim \text{Multinomial}(N,\boldsymbol{\theta})], which has the joint PMF:
+
+[stem]
+++++
+p_{\mathbf{X}}(N_1, N_2, \dots, N_k) = \begin{cases} \frac{N!}{N_1! N_2! \dots N_K!} \prod_{k=1}^K \theta_k^{N_k}, & \sum_{k=1}^KN_k = N, \\
+0, & \text{otherwise}.
+\end{cases}
+++++
+
+The factorial term accounts for the number of ways to allocate stem:[N] trials into stem:[1,2,\dots,K] categories. The factorial term is added because we consider the outcomes stem:[\{3,2,2,1,4,4,6\}] the same as stem:[\{1,2,2,3,4,4,6\}], i.e., the order of the individual trial's outcome doesn't matter.
+
+Since stem:[\frac{N!}{N_1! N_2! \dots N_K!} ] is a constant independent of stem:[\theta]s, the likelihood for the multinomial sampling model is the same as the likelihood for the Multinoulli (categorical) model. So any inferences we make about stem:[\boldsymbol{\theta}] will be the same whether we observe the counts, stem:[\mathcal{D} = \{N_1, N_2, \dots, N_k\}], or a sequence of trials, stem:[\mathcal{D} = \{x_1, \dots, x_N\}].
+
+== MLE Estimate ==
+
+Given a sample stem:[\mathcal{D}=\{x_1, \dots, x_N\}], find the MLE estimate of the probabilities stem:[\boldsymbol{\theta} = (\theta_1, \theta_2, \dots, \theta_K)].
+
+* Step 1:
++
+For a specified stem:[(\theta_1, \theta_2, \dots, \theta_K)] such that stem:[\sum_{i=1}^K \theta_k = 1], the likelihood of our data points stem:[\{x_1, x_2, \dots, x_N\}] is given by (assuming they are iid)
++
+[stem]
+++++
+p(\mathcal{D} \, | \, \boldsymbol{\theta}) = P(x_1, x_2, \dots, x_N \,|\, N,\boldsymbol{\theta} ) = \prod_{k=1}^K \theta_k^{N_k}
+++++
+
+* Step 2:
++
+The log-likelihood of our data point is given by,
++
+[stem]
+++++
+LL(\boldsymbol{\theta}) = \log \left( \prod_{k=1}^K \theta_k^{N_k} \right)  = \sum_{k=1}^K N_k \log \theta_k
+++++
+
+* Step 3:
++
+We need to find stem:[(\theta_1, \theta_2, \dots, \theta_K)] that maximizes the function stem:[LL(\boldsymbol{\theta})] subject to the constraint. Using Lagrange multipliers to account for constraint, 
++
+[stem]
+++++
+\begin{align*}
+A(\boldsymbol{\theta}) & = LL(\boldsymbol{\theta}) + \lambda \left(  \sum_{k=1}^K \theta_k -1 \right) \\
+& = \sum_{k=1}^K N_k \log (\theta_k) + \lambda \left(  \sum_{k=1}^K \theta_k -1 \right)
+\end{align*}
+++++
++
+Differentiate stem:[A(\boldsymbol{\theta})] w.r.t each stem:[\theta_k] separately and equate it to 0: Using the property that derivative of a sum is equal to the sum of the derivatives.
++
+[stem]
+++++
+\frac{\partial A(\boldsymbol{\theta})} {\partial \theta_k} = N_k \frac{1}{\theta_k} + \lambda = 0 \Rightarrow \theta_k = - \frac{N_k}{\lambda}
+++++
++
+Solve for stem:[\lambda] noting stem:[\sum_{k=1}^K N_k = N \text{ and } \sum_{k=1}^K \theta_k = 1]:
++
+[stem]
+++++
+\sum_{k=1}^K \theta_k = \sum_{k=1}^K - \frac{N_k}{\lambda} = 1 \Rightarrow 1= - \frac{N}{\lambda} \Rightarrow \lambda = -N
+++++
++
+Substituting stem:[\lambda] into stem:[\theta_k], which gives us the MLE estimate stem:[\hat{\theta}_k = \frac{N_k}{N}].
+
+Say we rolled a 6-sided die 12 times and observed: stem:[[1,1,1,2,2,4,4,4,5,6,6,6\]]. Then the MLE estimates will be
+
+[stem]
+++++
+\theta_1 = \frac{3}{12}; \theta_2 = \frac{2}{12}; \theta_3 = \frac{0}{12}; \theta_4 = \frac{3}{12}; \theta_5 = \frac{1}{12}; \theta_6 = \frac{3}{12}
+++++
+
+*Inference:*
+
+* Having found these estimates, we can find the probability of observing stem:[k] in a single trial is stem:[p(\tilde{x} = k \, | \, \boldsymbol{\theta}_\text{MLE}) = \theta_k].
+
+* The probability of observing stem:[\mathcal{D}_\text{test} = \{1,3,1,6\}] is given by 
++
+[stem]
+++++
+p(\mathcal{D}_\text{test} \, | \, \boldsymbol{\theta}_\text{MLE}) = \begin{cases} \theta_1 \cdot \theta_3 \cdot \theta_1 \cdot \theta_6, & \text{assuming the order matters} \\
+\frac{4!}{2! 1! 6!} \theta_1 \cdot \theta_3 \cdot \theta_1 \cdot \theta_6, & \text{assuming the order doesn't matter} \\
+\end{cases}
+++++ 
+
+In both these cases, the probability turns out to be 0 because stem:[\theta_3 =0]. This happens with MLE because category 3 is not seen in the dataset during training. Therefore, MLE estimate predicts that category 3 never occurs. MLE completely relies on the training data to estimate the parameters.
+
+But we have a prior knowledge that 3 in a dice can appear with non-zero probability. How can we incorporate our belief into this problem?
+
+== MAP Estimate ==
+We can incorporate our prior knowledge over the parameters. 
+
+We can use independent beta prior over each of these parameters, but the resulting stem:[\theta_1, \dots, \theta_K] by sampling from these independent beta distributions may not sum to 1. A suitable prior to use in this case is the Dirichlet distribution, which also acts as a conjugate prior to the multinomial (or categorical) distribution.
+
+====
+*Dirichlet Distribution:*
+
+The support of this distribution is stem:[S_K = \{\mathbf{x}: 0 \leq x_k \leq 1, \sum_{k=1}^K x_k = 1\}], which is a stem:[K-] dimensional vector. The support is the set of all stem:[\mathbf{x} \in \mathbb{R}^K] such that each stem:[x_k] is between 0 and 1 and the sum of stem:[x_k]'s will be 1. This space is called as simplex. When stem:[K=3], the support and the distribution can be given as
+
+image::.\images\dirichlet_01.png[align='center', 400, 200]
+
+The distribution has stem:[K] parameters, stem:[\alpha_1, \dots, \alpha_K], where each stem:[\alpha_k >0]. The pdf is defined as follows
+
+[stem]
+++++
+p_{\mathbf{X}}(\mathbf{x} \, | \, \boldsymbol{\alpha}) = \begin{cases} \frac{1}{B(\boldsymbol{\alpha})} \prod_{k=1}^K x_k^{\alpha_k -1}, & \text{if } \mathbf{x} \in S_K \\
+0, & \text{otherwise}
+\end{cases}
+++++
+
+where stem:[B(\boldsymbol{\alpha}) = B(\alpha_1, \dots, \alpha_K)] is the natural generalization of the beta function to stem:[K] variables.
+
+[stem]
+++++
+B(\boldsymbol{\alpha}) = \frac{\prod_{k=1}^K \Gamma(\alpha_k)}{\Gamma(\alpha_0)} \, \, \, \text{where  } \alpha_0 = \sum_{k=1}^K \alpha_k
+++++
+
+Some plots of the Dirichlet distribution when stem:[K=3]. We see that stem:[\alpha_0 = \sum_{k=1}^K \alpha_k] controls the strength of the distribution (how peaked it is), and stem:[\alpha_k] control where the peak occurs.
+
+image::.\images\dirichlet_02.png[align='center', 400, 200]
+
+stem:[\boldsymbol{\alpha} = (1,1,1)] corresponds to a uniform distribution over the simplex. If stem:[\alpha_k < 1] for all stem:[k], we get spikes at the corner of the simplex. The distribution has the properties:
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}[x_k] & = \frac{\alpha_k}{\alpha_0} \\
+\text{Mode}[x_k] & = \frac{\alpha_k-1}{\alpha_0-K} \\
+\text{Var}[x_k] & = \frac{\alpha_k (\alpha_0 - \alpha_k) }{\alpha_0^2 (\alpha_0 + 1)} \\
+\end{align*}
+++++
+
+====
+
+We assume a dirichlet prior over the parameters stem:[\boldsymbol{\theta} \sim \text{Dir}(\alpha_1, \dots, \alpha_K)]
+
+[stem]
+++++
+p(\boldsymbol{\theta} \, | \, \boldsymbol{\alpha}) = \frac{1}{B(\boldsymbol{\alpha})} \prod_{k=1}^K \theta_k^{\alpha_k -1} \mathbb{I}(\boldsymbol{\theta} \in S_K)
+++++
+
+And the likelihood of the data is given by
+
+[stem]
+++++
+p(\mathcal{D} \, | \, \boldsymbol{\theta}) = \prod_{k=1}^K \theta_k^{N_k}
+++++
+
+The posterior is given by
+
+[stem]
+++++
+p(\boldsymbol{\theta} \, | \, \mathcal{D}) \propto p(\boldsymbol{\theta} \, | \, \boldsymbol{\alpha}) \, p(\mathcal{D} \, | \, \boldsymbol{\theta}) \propto \prod_{k=1}^K \theta_k^{N_k + \alpha_k -1}
+++++
+
+Thus the posterior distribution is stem:[\text{Dir}(\boldsymbol{\theta} \, | \, \alpha_1 + N_1, \dots, \alpha_K + N_K)]. The mode of this distribution is the MAP estimate.
+
+[stem]
+++++
+\hat{\theta}_k = \frac{N_k + \alpha_k -1}{N + \alpha_0 -K}
+++++
+
+If we use the uniform prior stem:[\alpha_k = 1] for all stem:[k], then we recover the MLE.
+
+== Bayesian Inference ==
+The posterior predictive distribution for a single multinoulli trial is given by
+
+[stem]
+++++
+\begin{align*}
+p(\tilde{x}=j \, | \, \mathcal{D}) & = \int_{\boldsymbol{\theta}} p(\tilde{x}=j \, | \, \boldsymbol{\theta}) \cdot p(\boldsymbol{\theta} \, | \, \mathcal{D} ) d\boldsymbol{\theta} \\
+& = \int_{\theta} \theta_j \cdot \left[ \int p(\boldsymbol{\theta}\__{j}, \theta_j \, | \, \mathcal{D} ) d\boldsymbol{\theta}\__{j} \right] d\theta_j \\
+& = \int_{\theta} \theta_j \cdot p(\theta_j \, | \, \mathcal{D}) d\theta_j = \mathbb{E}[\theta_j \, | \, \mathcal{D}] = \frac{\alpha_j + N_j}{\sum_k (\alpha_k + N_k)} = \frac{\alpha_j + N_j}{\alpha_0 + N}
+\end{align*}
+++++
+
+where stem:[\boldsymbol{\theta}\__{j}] are all the components of stem:[\boldsymbol{\theta}] except stem:[\theta_j]. The result is the mean of the posterior distribution.
+
+Thus the estimate of stem:[\theta_k] through Bayesian inference is given by
+
+[stem]
+++++
+\hat{\theta}_k = \frac{\alpha_k + N_k}{\alpha_0 + N}
+++++
+
+This is a robust estimate, even when some natural categories never appeared in our training data, we get a non-zero probability for those natural or common categories.
+
+For a worked example, please refer to Murphy (2012, p. 81).
+
+== References ==
+. Murphy, K. P. (2012). Machine learning: A Probabilistic Perspective. MIT Press.

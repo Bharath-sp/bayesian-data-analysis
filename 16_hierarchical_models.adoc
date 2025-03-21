@@ -1,0 +1,274 @@
+= Hierarchical Models =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Hierarchical Bayes  ==
+A key requirement for computing the posterior stem:[p(\mathbf{w} \, | \, \mathcal{D})] is the specification of a prior stem:[p(\mathbf{w} \, | \, \boldsymbol{\phi})], where stem:[\boldsymbol{\phi}] are the hyper-parameters. What if we don't know how to set stem:[\boldsymbol{\phi}]? In some cases, we can use uninformative priors. A more Bayesian approach is to put a prior on our priors. In terms of graphical models, we can represent the situation as follows
+
+[stem]
+++++
+\boldsymbol{\phi} \rightarrow \mathbf{w}  \rightarrow \mathcal{D}
+++++
+
+This is an example of a hierarchical Bayesian model, also called a multi-level model, since there are multiple levels of unknown quantities.
+
+=== Example: Modeling related Cancer Rates ===
+Consider the problem of predicting cancer rates in various cities. In particular, suppose we measure the number of people in various
+cities, stem:[N_i], and the number of people who died of cancer in these cities, stem:[x_i]. We assume stem:[x_i \sim \text{Bin}(N_i, \theta_i)], and we want to estimate the cancer rates stem:[\theta_i]. There are two approaches that we can follow:
+
+. First approach is to estimate them all separately (indepedently), assuming stem:[x_i \sim \text{Bin}(N_i, \theta_i)] and stem:[\theta_i \sim \text{Beta}(a_i, b_i)]. But this will suffer from the sparse data problem (underestimation of the rate of cancer due to small volume of data stem:[N_i]).
+. Another approach is to assume all the stem:[\theta_i] are the same, stem:[\theta_1 = \theta_2 = \dots = \theta]; this is called parameter tying. Here we assume stem:[x_i \sim \text{Bin}(N_i, \theta)] and stem:[\theta \sim \text{Beta}(a, b)]. Then the resulting pooled MLE estimate is stem:[\hat{\theta} = \frac{\sum_i x_i}{\sum_i N_i}]. But the assumption that all the cities have the same rate is a rather strong one. We fail to capture city-specific variations with this approach.
+
+A compromise approach is to assume that the stem:[\theta_i]'s are similar, but that there may be city-specific variations. This can be modeled by assuming stem:[x_i \sim \text{Bin}(N_i, \theta_i)] and all stem:[\theta_i]s are drawn from some common distribution, say stem:[\theta_i \sim \text{Beta}(a, b)]. How do we set the value for stem:[a] and stem:[b]? We treat them as unknown variables and infer them from the data. This makes the model hierarchical with structure
+
+[stem]
+++++
+\begin{align*}
+x_i | \theta_i & \sim \text{Bin}(N_i, \theta_i) \\
+\theta_i | a,b  & \sim \text{Beta}(a, b) \\
+a,b & \sim p(a,b)
+\end{align*}
+++++
+
+image::.\images\hierar_model_01.png[align='center', 400, 300]
+
+It is crucial that we infer the hyperparameters stem:[(a,b)] from the data. Rather if we just clamp it to a fixed constant, the stem:[\theta_i]'s will become conditionally independent, and there will be no information flow between stem:[\theta_i]'s. That is, since stem:[(a,b)] are not influenced by the data, there is no direct connection between different cities' stem:[\theta_i]. If a particular city has very little data, it's stem:[\theta_i] estimate will be heavily influenced by the fixed Beta prior, and it won't benefit from observations in other cities.
+
+In contrast, if we assume that stem:[(a,b)] are not fixed, but instead have their own prior stem[p(a,b)] and are learned from data, then stem:[(a,b)] are estimated based on all data points from all cities. Now, each city's stem:[\theta_i] is still sampled from stem:[\text{Beta}(a, b)], but now stem:[(a,b)] is adapted to fit the data. Since stem:[(a,b)] are inferred from the entire dataset, a city with very little data can still get a reasonable estimate for stem:[\theta_i] because it is informed by data from other cities.
+
+* Data-rich cities (those with many observations) provide strong evidence about what values of stem:[(a,b)] are reasonable.
+* Data-poor cities (those with few observations) benefit because their estimates of stem:[\theta_i] are now regularized by the learned hyperparameters rather than being dictated by an arbitrary fixed prior.
+
+This is often referred to as "borrowing statistical strength" because cities with sparse data benefit from the collective knowledge of cities with more data. This approach allows us to estimate the cancer rates for each city by sharing the information across cities. This way hierarchical modelling approach allows us to learn the cancer rate from a small experiment by incorporating the results from similar previous (or historical) experiments.
+
+== Hierarchical Beta-Binomial Model ==
+The hierarchical beta-binomial model is
+
+[stem]
+++++
+\begin{align*}
+x_i | \theta_i & \sim \text{Bin}(N_i, \theta_i) \\
+\theta_i | a,b  & \sim \text{Beta}(a, b) \\
+a,b & \sim p(a,b)
+\end{align*}
+++++
+
+Here the data stem:[x_i] are from a distribution that depends on stem:[\theta_i], and all stem:[\theta_i]'s are from a common distribution with parameters stem:[a] and stem:[b] which are inferred from data.
+
+Now with this setup, we have a common prior stem:[\theta_i \sim \text{Beta}(a, b)] for all stem:[i] and a local likelihood stem:[\text{Bin}(N_i, \theta_i)], i.e., each stem:[\theta_i] value from the prior results in a different likelihood based on the data each city observed. Thus, the local aspects are captured using the likelihood and the global aspects are captured through the common prior distribution. Here
+
+* stem:[\mathcal{D} = (x_1, \dots, x_N)] are random variables, but observed. Here stem:[x_i] denotes the number of people who died of cancer in the stem:[i]th city.
+* stem:[\boldsymbol{\theta} = (\theta_1, \dots, \theta_N)] and stem:[(a,b)] are (hidden) random variables. Note here we have more parameters than the data points.
+* The prior that we will be setting for the entire analysis is the prior on stem:[(a,b)].
+
+The joint distribution over all the random variables involved is
+
+[stem]
+++++
+p(\mathcal{D}, \, \boldsymbol{\theta}, a, b \,|\, \mathbf{N}) = p(\mathcal{D} | \boldsymbol{\theta}) \, p(\boldsymbol{\theta} \, | a, b) \, p(a,b)
+++++
+
+where stem:[\mathbf{N} = (N_1, \dots, N_N)], stem:[N_i] is the number of people surveyed in the stem:[i]th city. The data points stem:[x_i]'s are independently sampled. And given stem:[(a,b)], stem:[\theta_i] become independent. Thus, we can write this as
+
+[stem]
+++++
+p(\mathcal{D}, \, \boldsymbol{\theta}, a, b \,|\, \mathbf{N}) = p(a,b) \prod_{i=1}^N \text{Bin}(x_i \, | \, N_i, \theta_i)\, \text{Beta}(\theta_i \, | \, a, b)
+++++
+
+The (joint) posterior distribution that is of interest to us is stem:[p(\boldsymbol{\theta}, a, b \, | \, \mathcal{D})], which is given as
+
+[stem]
+++++
+\begin{align*}
+p(\boldsymbol{\theta}, a, b \, | \, \mathcal{D}) & \propto p(\mathcal{D} \, | \boldsymbol{\theta}, a, b) \, p(\boldsymbol{\theta}, a, b) \\
+& \propto p(\mathcal{D} \, | \boldsymbol{\theta}) \, p(\boldsymbol{\theta} \, | a, b) \, p(a,b) \\
+& \propto p(a,b) \prod_{i=1}^N \text{Bin}(x_i \, | \, N_i, \theta_i)\, \text{Beta}(\theta_i \, | \, a, b) \\
+& \propto p(a,b) \prod_{i=1}^N \theta_i^{x_i} (1-\theta_i)^{N_i - x_i} \, \frac{\Gamma (a+b)}{\Gamma(a) \Gamma(b)} \theta_i^{a-1} (1-\theta_i)^{b-1} 
+\end{align*}
+++++
+
+CAUTION: Note the Binomial coefficient is ignored as it is a constant.
+
+Then we are focused on the posterior over the parameters stem:[p(\boldsymbol{\theta} \, | \, \mathcal{D})]. We can compute this quantity by integrating out the hyper-parameters from the joint posterior:
+
+[stem]
+++++
+p(\boldsymbol{\theta} \, | \, \mathcal{D}) = \int \int p(\boldsymbol{\theta}, a, b \, | \, \mathcal{D}) da \, db
+++++
+
+Using the chain rule of probability, we can write
+
+[stem]
+++++
+p(\boldsymbol{\theta}, a, b \, | \, \mathcal{D}) = p(\boldsymbol{\theta}\, | \, a, b , \mathcal{D}) \, p(a, b \, | \, \mathcal{D})
+++++
+
+Then
+
+[stem]
+++++
+p(\boldsymbol{\theta} \, | \, \mathcal{D}) = \int \int p(\boldsymbol{\theta}\, | \, a, b , \mathcal{D}) \, p(a, b \, | \, \mathcal{D}) \, da \, db
+++++
+
+We first estimate the posterior over the hyperparameters stem:[p(a,b \, | \, \mathcal{D})] and then compute the conditional posterior stem:[p(\boldsymbol{\theta} \, | \, a,b, \mathcal{D})].
+
+CAUTION: In general, this integral is often computationally expensive and is usually intractable. In practice, we use approximate inference methods such as Monte Carlo methods or variational inference.
+
+== Fully Bayesian Treatment ==
+Let's first focus on stem:[p(a,b \, | \, \mathcal{D})], which is
+
+[stem]
+++++
+p(a,b \, | \, \mathcal{D}) \propto p(\mathcal{D} \, | a,b) \, p(a,b)
+++++
+
+Since the data stem:[\mathcal{D}] depends on stem:[\boldsymbol{\theta}], we compute the marginal likelihood stem:[p(\mathcal{D} \, | a,b)] (also known as the evidence) by integrating out stem:[\boldsymbol{\theta}]:
+
+[stem]
+++++
+p(\mathcal{D} \, | a,b) = \int p(\mathcal{D} \, | \boldsymbol{\theta}) \, p(\boldsymbol{\theta} \, | \, a,b) d\boldsymbol{\theta}
+++++
+
+[NOTE]
+====
+This is the same as integrating out the parameters from the joint posterior.
+
+[stem]
+++++
+\begin{align*}
+p(a,b \, | \, \mathcal{D}) & = \int p(\boldsymbol{\theta}, a, b \, | \, \mathcal{D}) d\boldsymbol{\theta} \\
+& \propto \int p(\mathcal{D} \, | \boldsymbol{\theta}) \, p(\boldsymbol{\theta} \, | a, b) \, p(a,b) d\boldsymbol{\theta} \\
+& \propto p(a,b) \int p(\mathcal{D} \, | \boldsymbol{\theta}) \, p(\boldsymbol{\theta} \, | a, b) \, d\boldsymbol{\theta} \\
+\end{align*}
+++++
+====
+
+In the beta-binomial model, the likelihood is binomial and the prior is Beta. For a single data point stem:[x_i]
+
+[stem]
+++++
+\begin{align*}
+p(x_i \, | \theta_i ) & = \text{Bin}(x_i \, | N_i, \theta_i) = \binom{N_i}{x_i} \theta_i^{x_i} (1-\theta_i)^{N_i - x_i} \\
+p(\theta_i \, | a,b) & = \text{Beta}(\theta_i \, | a,b) = \frac{1}{B(a,b)} \theta_i^{a-1} (1-\theta_i)^{b-1}
+\end{align*}
+++++
+
+To find the marginal likelihood stem:[p(x_i \, | a,b)], we integrate out stem:[\theta_i]:
+
+[stem]
+++++
+p(x_i \, | a,b) = \int_{0}^1 \text{Bin}(x_i \, | N_i, \theta_i) \cdot \text{Beta}(\theta_i \, | a,b) d\theta_i
+++++
+
+This integral simplifies to a Beta-Binomial distribution:
+
+[stem]
+++++
+p(x_i \, | a,b) = \frac{\binom{N_i}{x_i} B(x_i +a, N_i - x_i +b)}{B(a,b)}
+++++
+
+For the full dataset stem:[\mathcal{D} = \{x_i\}_{i=1}^N], assuming conditional independence given stem:[\boldsymbol{\theta}]
+
+[stem, id='eq_1']
+++++
+\begin{align}
+p(\mathcal{D} \, | a,b) = \prod_{i=1}^N p(x_i \, | a,b) = \prod_{i=1}^N \frac{\binom{N_i}{x_i} B(x_i +a, N_i - x_i +b)}{B(a,b)}
+\end{align}
+++++
+
+CAUTION: Here marginally, stem:[x_i] and stem:[x_j] are not independent. This is because stem:[\theta_i] and stem:[\theta_j] themselves are random and drawn from a Beta prior shared across cities. But given stem:[\theta_i] and stem:[\theta_j], the data points stem:[x_i] and stem:[x_j] are independent.
+
+Finally, the posterior over the hyperparameters stem:[(a,b)] is
+
+[stem]
+++++
+p(a,b \, | \, \mathcal{D}) \propto p(a,b) \, \prod_{i=1}^N \frac{B(x_i +a, N_i - x_i +b)}{B(a,b)}
+++++
+
+If a prior stem:[p(a,b)] is specified, and if we properly account for the denominator term as well, we get the full posterior distribution over the hyperparameters.
+
+NOTE: This posterior distribution over the hyperparameters is obtained by considering the data across all the cities, i.e., we are not fixing the hyperparameters to some constant value, they are inferred from the data.
+
+Then, using this distribution stem:[p(a,b \, | \, \mathcal{D})], we integrate over stem:[(a,b)] to obtain the marginal posterior over stem:[\boldsymbol{\theta}]:
+
+[stem]
+++++
+p(\boldsymbol{\theta} \, | \, \mathcal{D}) = \int \int p(\boldsymbol{\theta}\, | \, a, b , \mathcal{D}) \, p(a, b \, | \, \mathcal{D}) \, da \, db
+++++
+
+This approach is known as **Fully Bayesian treatment**. This method accounts for full uncertainty in the hyper-parameters and propagates it into the posterior distribution of stem:[\boldsymbol{\theta}]. But as mentioned before, the computation becomes more complex as it requires full posterior integration.
+
+== Empirical Bayes ==
+In this case, we treat the hyper-parameters as point estimates rather than fully modeling its uncertainty. So instead of computing the full posterior stem:[p(a,b \, | \, \mathcal{D})], we take the mode of the posterior as the point estimate for stem:[(a,b)], i.e., we find the maximum marginal likelihood estimate (MMLE). Let's denote the hyperparameters by stem:[\boldsymbol{\eta} = (a,b)].
+
+[stem]
+++++
+\begin{align*}
+\hat{\boldsymbol{\eta}} & = \underset{\boldsymbol{\eta}}{\mathrm{arg max}}\, p(\boldsymbol{\eta} \, | \, \mathcal{D}) \\
+& = \underset{\boldsymbol{\eta}}{\mathrm{arg max}}\, p(\mathcal{D} \, | \, \boldsymbol{\eta} ) \, p(\boldsymbol{\eta}) \\
+& = \underset{\boldsymbol{\eta}}{\mathrm{arg max}}\, p(\mathcal{D} \, | \, \boldsymbol{\eta} ) 
+\end{align*}
+++++
+
+by assuming a uniform prior over stem:[\boldsymbol{\eta}], stem:[p(\boldsymbol{\eta})] is a constant. Thus, MMLE becomes equivalent to MAP estimation with a uniform prior. From <<eq_1, Equation 1>>
+
+[stem]
+++++
+\hat{\boldsymbol{\eta}} = \underset{\boldsymbol{\eta}}{\mathrm{arg max}}\, \prod_{i=1}^N \frac{B(x_i +a, N_i - x_i +b)}{B(a,b)}
+++++
+
+We maximize the quantity with respect to stem:[a] and stem:[b] to get stem:[\hat{\boldsymbol{\eta}} = (\hat{a},\hat{b})]. Having estimated stem:[a] and stem:[b], we can plug in the hyper-parameters to compute the posterior stem:[p(\boldsymbol{\theta} \, | \, \hat{a},\hat{b}, \mathcal{D})] in the usual way, using conjugate analysis.
+
+Given stem:[(\hat{a},\hat{b})], the components of stem:[\boldsymbol{\theta}] become conditionally independent and have posterior densities that are of the form of beta distribution.
+
+[stem]
+++++
+p(\boldsymbol{\theta} \, | \, \hat{a},\hat{b}, \mathcal{D}) = \prod_{i=1}^N p(\theta_i \, | \, \hat{a},\hat{b}, x_i)
+++++
+
+where
+
+[stem]
+++++
+\begin{align*}
+p(\theta_i \, | \, \hat{a},\hat{b}, x_i) & = \frac{p(x_i \, | \, \theta_i) \, p(\theta_i \, | \, \hat{\boldsymbol{\eta}})}{p(x_i \, | \, \hat{\boldsymbol{\eta}})} \\
+\\
+p(\theta_i \, | \, \hat{a},\hat{b}, x_i) & \propto p(x_i \, | \, \theta_i) \, p(\theta_i \, | \, \hat{\boldsymbol{\eta}}) \\
+& = \text{Bin}(x_i \, | N_i, \theta_i) \cdot \text{Beta}(\theta_i \, | \hat{\boldsymbol{\eta}}) \\
+& = \theta_i^{x_i} (1-\theta_i)^{N_i - x_i} \cdot \theta_i^{\hat{a}-1} (1-\theta_i)^{\hat{b}-1} \\
+& = \theta_i^{\hat{a}+x_i-1} (1-\theta_i)^{\hat{b}+N_i -x_i-1} 
+\end{align*}
+++++
+
+This is recognized as the Beta distribution. Thus, the posterior distribution of each stem:[\theta_i] given stem:[(\hat{a},\hat{b})] is stem:[\text{Beta}(\hat{a}+x_i, \hat{b}+N_i -x_i)].
+
+To summarize, a hierarchical model is characterized by both:
+
+. The use of hyperparameters as random variables (thereby introducing a second layer of uncertainty).
+. The sharing of information across groups (e.g., cities) through these hyperparameters.
+
+Here all cities-specific parameters stem:[\theta_i] share the same hyperparameter stem:[\boldsymbol{\eta}]. So when given some data for stem:[i]th city, the posterior of stem:[\theta_i] is updated. This updates the posterior over stem:[\boldsymbol{\eta}], which in turn influences the posteriors of the other cities' parameters stem:[\theta_i]. Thus inducing a statistical correlation among stem:[\theta_i]'s.
+
+== Gamma - Poisson Hierarchical Model ==
+Suppose there are 10 power plant pumps. For these 10 pumps, we are given the number of failures stem:[x_i] and the number of hours (in thousands) the pumps have run stem:[t_i]. We seek to model the number of failures stem:[x_i] for each plant.
+
+image::.\images\complex_hierar_01.png[align='center', 600, 200]
+
+We model stem:[X_i \sim \text{Poi}(\theta_i t_i)], for stem:[i=1, \dots, 10] where stem:[\theta_i] is the failure rate (the failure rate per unit time) for the stem:[i]th plant. Then the expected number of failure for the stem:[i]th plant is stem:[\lambda_i] (which is the paraemter of the Poisson).
+
+The parameters stem:[\theta_i] can be estimated using the data provided for each plant. But to share the knowledge across the plants, we assume that these parameters come from a common prior gamma distribution:
+
+[stem]
+++++
+\theta_i \sim \Gamma(\alpha, \beta) \hspace{1cm} i=1,\dots,10
+++++
+
+Here stem:[\alpha, \beta] are learned using the data across all the plants and stem:[\theta_i] are learned using the data specific to each plant. The final posterior of stem:[\theta_i] contains both the observations stem:[x_i] specific to the plant and the hyperparameters stem:[\alpha, \beta], thus it uses the common knowledge as well as the local task-specific knowledge. This model is known as Gamma-Poisson Hierarchical model and it can be represented through a probabilistic graphical model:
+
+image::.\images\complex_hierar_02.png[align='center', 300, 200]
+
+The rectangular box denotes the repetition of this modeling part for 10 plants. The quantities within the block will be different for each plant. The random variables are denoted by ellipses.
+

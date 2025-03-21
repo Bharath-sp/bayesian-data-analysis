@@ -1,0 +1,312 @@
+= Beta-Binomial Model =
+:doctype: book
+:author: Bharath Kumar S P
+:email: bharath030195@gmail.com
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Indian Election Example ==
+Consider a survey where voters were asked if they will vote for NDA or UPA in the next election.
+
+* Let stem:[X_i] be a binary variable, which is 1 for NDA and 0 for UPA, for stem:[i=1, \dots, N]. We are given a series of observations.
+* Let stem:[N] be the total number of individuals and stem:[N_1] be the number of individuals who are planning to vote NDA. Say we got the data stem:[N=20] and stem:[N_1=12].
+
+Each stem:[X_i] can be modelled as a Bernoulli random variable, stem:[X_i \sim \text{Bern}(\theta)], where stem:[\theta] is the probability that an individual will vote NDA. The probability mass function of stem:[X_i] is
+
+[stem]
+++++
+p(x_i \,|\, \theta) = \begin{cases}
+\theta & \text{if } x_i=1\\
+1-\theta & \text{if } x_i=0
+\end{cases} = \theta^{x_i} (1-\theta)^{1-x_i}
+++++
+
+=== Likelihood ===
+Assuming the data are iid, the likelihood has the form
+
+[stem]
+++++
+p(\mathcal{D} \, | \, \theta) = \theta^{N_1} (1-\theta)^{N_0}
+++++
+
+where we have stem:[N_1] votes for NDA and stem:[N_0] votes for UPA.
+
+Now suppose the data consists of the number of votes for NDA stem:[N_1] observed in a fixed number stem:[N=N_1 + N_0] of responses. In this case, we have stem:[N_1 \sim \text{Bin}(N, \theta)], which has the PMF:
+
+[stem]
+++++
+p(N_1 \, | \, N, \theta) = \binom{N}{N_1} \theta^{N_1} (1-\theta)^{N - N_1}
+++++
+
+Since stem:[\binom{N}{N_1}] is a constant independent of stem:[\theta], the likelihood for the binomial sampling model is the
+same as the likelihood for the Bernoulli model. So any inferences we make about stem:[\theta] will be the same whether we observe the counts, stem:[\mathcal{D} = (N_1, N)], or a sequence of trials, stem:[\mathcal{D} = \{x_1, \dots, x_N\}].
+
+=== MLE Estimate ===
+[stem]
+++++
+\begin{align*}
+\hat{\theta}_{\text{MLE}} & = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N p(x_i | \theta) \hspace{1cm} \text{where } \theta \in [0,1] \\
+& = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N \theta^{x_i} (1-\theta)^{1-x_i} = \underset{\theta}{\mathrm{arg max}}\, \theta^{N_1} (1-\theta)^{N-N_0} \\
+& = \underset{\theta}{\mathrm{arg max}}\, \theta^{12} (1-\theta)^8 = 0.6
+\end{align*}
+++++
+
+In general, for Beta-Bernoulli/Binomial distribution, the MLE estimate is
+
+[stem]
+++++
+\hat{\theta}_{\text{MLE}} = \frac{N_1}{N} =  0.6
+++++
+
+=== MAP Estimate ===
+Let's take our prior as Beta distribution. And say we think that the voters are equally like to vote both the parties. Then we want the peak of the distribution around 0.5. We can equate the mode of the distribution to 0.5 and solve for stem:[a,b] to get an appropriate value of the parameters.
+
+[stem]
+++++
+\begin{align*}
+\mathrm{mode}(\theta) & = \frac{a-1}{a+b-2} = 0.5 \\
+& \implies a-1 = 0.5 (a+b-2) \\
+\end{align*}
+++++
+
+There can be multiple solutions to this equation. If our belief is too strong that the value of stem:[\theta] is 0.5, then we have to consider a larger values of stem:[a] and stem:[b]. We have to make a choice here based on how confident we are with our belief. The less we trust, the more the actual observed data will dominate in our posterior belief. Let's consider stem:[a=5, b=5]. Thus stem:[\theta \sim \text{Beta}(5,5)]. Then the PDF of stem:[\theta] is
+
+[stem]
+++++
+\begin{align*}
+    p(\theta) =
+    \begin{cases}
+    \frac{1}{B(5,5)}{\theta}^4(1-\theta)^4 &\mbox{if } 0 \leq \theta \leq 1 \\
+    0 & \mbox{otherwise}
+    \end{cases}
+   &&\mbox{where } B(5,5) =  \frac{\Gamma(5) \Gamma(5)}{\Gamma(10)}
+\end{align*}
+++++
+
+The MAP estimate is
+
+[stem]
+++++
+\begin{align*}
+\hat{\theta}_{\text{MAP}} & = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N p(x_i | \theta) \, p(\theta) \\
+& = \underset{\theta}{\mathrm{arg max}}\, \theta^{12} (1-\theta)^8 \cdot \theta^4 (1-\theta)^4 && \text{ignoring the constant } \frac{1}{B(5,5)}\\
+& = \underset{\theta}{\mathrm{arg max}}\, \theta^{16} (1-\theta)^{12}
+\end{align*}
+++++
+
+Here the prior beta distribution acts as a conjugate prior to the likelihood which is the Bernoulli distribution. Consequently, the posterior distribution will also have the same functional form. On accounting for the ignored constant stem:[\frac{1}{B(5,5)}] and the marginal likelihood term, we see that the posterior distribution is stem:[p(\theta \, |\, \mathcal{D}) \sim \text{Beta}(17,13)].
+
+The MAP estimate is the mode of the posterior distribution, stem:[\hat{\theta}_{\text{MAP}} = \frac{16}{28} \approx 0.57].
+
+In general, for Beta-Binomial model, the posterior distribution is stem:[p(\theta \, |\, \mathcal{D}) \sim \text{Beta}(N_1 + a,N-N_1 + b)]. Then the mode is
+
+[stem]
+++++
+\hat{\theta}_{\text{MAP}} = \frac{N_1 + a -1}{N + a+b-2} = \frac{12 + 5 -1}{20+5+5-2} = \frac{16}{28}
+++++
+
+We have stem:[\hat{\theta}_{\text{MLE}} =  0.6]. The mode of the prior distribution is 0.5. We see that the MAP estimate is in between the likelihood and the prior.
+
+*Inference:*
+
+Having got the MLE and MAP estimates, we can predict stem:[p(\tilde{x}=1 \,|\, \hat{\theta}_{\text{MLE}} = 0.6) = 0.6] and stem:[p(\tilde{x}=1 \,|\, \hat{\theta}_{\text{MAP}} = 0.57) = 0.57]
+
+=== Bayesian Inference ===
+
+We know that the posterior distribution is stem:[p(\theta \, |\, \mathcal{D}) \sim \text{Beta}(17,13)]. We use the full posterior distribution over stem:[\theta] to make predictions.
+
+*Predicting the outcome of a single future trial:*
+
+Consider predicting the probability of NDA vote in a single future trial.
+
+[stem]
+++++
+\begin{align*}
+p(\tilde{x}=1 \, | \, \mathcal{D}) & = \int_{\theta} p(\tilde{x}=1 \, | \, \theta) \cdot p(\theta \, | \, \mathcal{D} ) d\theta \\
+& = \int_{\theta} \theta \cdot p(\theta \, | \, \mathcal{D} ) d\theta \hspace{1cm} \text{this is } \mathbb{E}[\theta \, | \, \mathcal{D}] \\
+& = \frac{1}{B(17,13)} \int_0^1 \theta \cdot \theta^{16} (1-\theta)^{12} d\theta
+\end{align*}
+++++
+
+We can proceed further to evaluate this integral, but as we know here we are just finding the expectation of stem:[\theta] over the posterior distribution. The posterior distribution is stem:[p(\theta \, |\, \mathcal{D}) \sim \text{Beta}(17,13)]. We can simply find the expected value of this distribution.
+
+====
+In general, if stem:[X \sim \text{Beta}(a,b)], the expected value of stem:[X] is
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}[X] & = \int_x x \cdot x^{a-1} (1-x)^{b-1} \frac{\Gamma(a+b)}{\Gamma{a} \Gamma(b)} dx \\
+& = \frac{\Gamma(a+b)}{\Gamma{a} \Gamma(b)} \int_x  x^{a+1}-1 (1-x)^{b-1} dx \\
+& = \frac{\Gamma(a+b)}{\Gamma{a} \Gamma(b)} \int_x  x^{a+1}-1 (1-x)^{b-1} dx \\
+& = \frac{\Gamma(a+b)}{\Gamma{a} \Gamma(b)} \frac{\Gamma(a+1) \Gamma(b)}{\Gamma{(a+1+b)}} = \frac{\Gamma(a+b)}{\Gamma{a}} 
+\frac{a\Gamma(a)}{a+b \cdot \Gamma{(a+b)}} = \frac{a}{a+b}\\
+\end{align*}
+++++
+
+And we know the best estimate of the value of a random variable is the mean of the distribution, in the sense of minimizing the expected squared error.
+====
+
+Therefore the expected value of stem:[\text{Beta}(17,13) = \frac{17}{30} = 0.56]. Therefore, as per the Bayesian inference, stem:[p(\tilde{x}=1 \, | \, \mathcal{D}) = 0.56].
+
+The mean and mode are point estimates, but it is useful to know how much we can trust them. The variance of the posterior is one way to measure this. The variance of the Beta posterior is given by
+
+[stem]
+++++
+\text{Var}(\theta \, | \, \mathcal{D} ) = \frac{(a+N_1)(b+N_0)}{(a+N_1+b+N_0)^2 (a+N_1+b+N_0+1)} = \frac{17*13}{1600 * 41} = 0.003
+++++
+
+This is used to model the epistemic or model uncertainty (how much variance the model has in its predictions).
+
+*Predicting the outcome of multiple future trials:*
+
+Suppose now we were interested in predicting the number of NDA votes, stem:[x], in stem:[M] future trials. And we assume that the order of the observations doesn't matter, i.e., observing stem:[(1,0,0,1,1)] is the same as observing stem:[(1,1,1,0,0)]. In both we have observed 3 ones and 2 zeroes. Thus the probability of observing stem:[x] positives in stem:[M] future trials is
+
+[stem]
+++++
+\begin{align*}
+p(x \, | \, \mathcal{D}, M) & = \int_{\theta} p(x \, | \, \theta, M) \cdot p(\theta \, | \, \mathcal{D} ) d\theta \\
+& = \int_0^1 \text{Bin}(x \, | \, \theta, M) \cdot \text{Beta}(\theta \, | \, N_1 + a,N-N_1 + b ) d\theta \\
+& = \binom{M}{x} \frac{1}{B(N_1 + a,N-N_1 + b)} \int_0^1 \theta^x (1-\theta)^{M-x} \cdot \theta^{N_1+a-1} (1-\theta)^{N-N_1 + b -1} d\theta \\
+\end{align*}
+++++
+
+We recognize the integral as the normalization constant for a stem:[\text{Beta}(N_1 + a + x, M-x+ N-N_1 + b)] distribution. Hence
+
+[stem]
+++++
+\int_0^1 \theta^x (1-\theta)^{M-x} \cdot \theta^{N_1+a-1} (1-\theta)^{N-N_1 + b -1} d\theta = B(N_1 + a + x, M-x+ N-N_1 + b)
+++++
+
+Thus we find that the posterior predictive is given by the following, known as the (compound) beta-binomial distribution:
+
+[stem]
+++++
+Bb(x \, | \, a+N_1, b+N-N_1, M) \triangleq \binom{M}{x} \frac{B(N_1 + a + x, M-x+ N-N_1 + b)}{B(N_1 + a,N-N_1 + b)}
+++++
+
+This distribution has the following mean
+
+[stem]
+++++
+\mathbb{E}[X] = M \cdot \frac{a+N_1}{a+ b + N}
+++++
+
+== Summary ==
+
+The Beta-Bernoulli / Binomial model is
+
+[stem]
+++++
+\begin{align*}
+X_i | \theta & \sim \text{Bern}(\theta) \,\, \text{  or  } \,\, N_1 | \theta, N \sim \text{Bin}(N, \theta) \\
+\theta | a,b  & \sim \text{Beta}(a, b) \\
+\end{align*}
+++++
+
+Here we treat stem:[N, a,b] as known quantities. And stem:[X_i]s or stem:[N_1] is the observed data stem:[\mathcal{D}]. The random variables are stem:[\mathcal{D}] and stem:[\theta]. The joint distribution over all the random variables involved is
+
+[stem]
+++++
+p(\mathcal{D}, \theta) = p(\mathcal{D} | \theta) \, p(\theta)
+++++
+
+The posterior distribution that is of interest to us is stem:[p(\theta \, | \, \mathcal{D})], which can be given as
+
+[stem]
+++++
+p(\theta \, | \, \mathcal{D}) = \frac{p(\mathcal{D} | \theta) \, p(\theta)}{p(\mathcal{D})}
+++++
+
+The estimate of stem:[\theta] from various methods are:
+
+[stem]
+++++
+\begin{align*}
+\hat{\theta}_{\text{MLE}} & = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N p(x_i | \theta) = \frac{N_1}{N} && \implies p(\tilde{x}=1 \, | \, \mathcal{D}) = p(\tilde{x}=1 \, | \, \hat{\theta}_{\text{MLE}})\\
+\hat{\theta}_{\text{MAP}} & = \underset{\theta}{\mathrm{arg max}}\, \prod_{i=1}^N p(x_i | \theta) \, p(\theta) = \frac{N_1 + a -1}{N + a+b-2} && \implies p(\tilde{x}=1 \, | \, \mathcal{D}) = p(\tilde{x}=1 \, | \, \hat{\theta}_{\text{MAP}}) \\
+\end{align*}
+++++
+
+When we have a beta prior stem:[\text{Beta}(a,b)], and observe the data (which is Bernoulli/Binomial distributed) stem:[N_1] ones out of stem:[N], then the posterior distribution is given by stem:[p(\theta \, |\, \mathcal{D}) \sim \text{Beta}(N_1+ a,N-N_1 + b)]. The Bayesian makes use of this full posterior distribution to make predictions. The prediction for a single trial is
+
+[stem]
+++++
+\begin{align*}
+p(\tilde{x}=1 \, | \, \mathcal{D}) & = \int_{\theta} p(\tilde{x}=1 \, | \, \theta) \cdot p(\theta \, | \, \mathcal{D} ) d\theta \\
+& = \int_{\theta} \theta \cdot \text{Beta}(N_1 + a,N-N_1 + b) d\theta \\
+& = \frac{a+N_1}{a+b+N}
+\end{align*}
+++++
+
+As stem:[X] follows stem:[\text{Bern}(\theta)], the estimate of stem:[\theta] through Bayesian is
+
+[stem]
+++++
+\hat{\theta}_{\text{Bayesian}} = \frac{a+N_1}{a+b+N}
+++++
+
+== Important Properties ==
+Two important values that we can get from the posterior distribution are the mean and the variance.
+
+. Posterior is a 'compromise' between the prior and likelihood. Posterior mean is convex combination of the prior mean stem:[m_1] and the MLE, stem:[\lambda m_1 + (1-\lambda) \hat{\theta}_{\text{MLE}}].
++
+image::.\images\beta_bernoulli_01.png[align='center', 600, 300]
++
+Depending upon the strength of the prior, the posterior can be closer to the prior or closer to the likelihood.
++
+When we consider an uninformative prior, stem:[\theta \sim \text{Beta}(1,1)], the MAP and the MLE estimate will be the same. Taking mode of the posterior (MAP estimate) doesn't provide any additional information. In such cases, the mean of the posterior distribution (the Bayesian estimate) can provide a better and robust estimate.
+
+. In Bayesian inference, as we are using the entire distribution to mak prediction, we can also compute the variance associated with our prediction. This says how much we are confident about our prediction.
+
+. Under Bayesian framework, we can perform batch-wise or online learning very easily. We can start with a prior, observe the data, and get a posterior distribution. Now this posterior distribution can be considered as the prior, and can be updated as per the new data. The process can be repeated.
+
+== Example 01: Drug ==
+
+Before being tested, a medicine is believed to work about 80% of the time. The medicine is tried on 20 patients. It works for 14 and doesn't work for 6. What is your new belief that the drug works?
+
+*Frequentist Approach:* Here we have no means to incorporate that 80%, but based on the real trials stem:[p \approx \frac{14}{20} = 0.7]. So the probability of being success with the drug is 0.7.
+
+*Bayesian Approach:* Here we model stem:[p=\theta \sim \mathrm{Beta}(?,?)]. The prior is just saying 80%, what should be the value for stem:[a] and stem:[b]? We can take any of the below priors, all of them match the claim:
+
+* stem:[\theta \sim \mathrm{Beta}(81,21)]: 80 successes/ 100 trials.
+* stem:[\theta \sim \mathrm{Beta}(9,3)]: 8 successes/ 10 trials.
+* stem:[\theta \sim \mathrm{Beta}(5,2)]: 4 successes/ 5 trials. Let's go with this prior.
+
+stem:[\theta \sim \mathrm{Beta}(a=5,b=2)]. We observe 14 successess and 6 failures. So our posterior belief is stem:[\theta\,|\,D \sim \mathrm{Beta}(a=19,b=8)].
+
+image::.\images\prior_posterior_beta.png[align='center',900,300]
+
+Expectation of the random variable stem:[\theta|D] is stem:[\mathrm{E}[\theta\,|\,D\] = \frac{a}{a+b} = \frac{19}{19+8} \approx 0.70]. Mode turns out to be 0.72.
+
+== Example 02: Video Likes ==
+
+Say we are presented with two youtube videos,video A has got 10k likes and 50 dislikes and video B has got 10 likes and no dislikes. Which video are you more likely to like? Going with the frequentist approach to compute the probability, we get:
+
+[stem]
+++++
+\begin{align*}
+\text{For video A: } \mathrm{P}(like) & = \frac{10000}{10050} = 0.995 \\
+\text{For video B: } \mathrm{P}(like) & = \frac{10}{10} = 1
+\end{align*}
+++++
+
+We get an erroneous result that video B is the movie that we are more likely to like.
+
+*Bayesian Approach:* Here stem:[\theta] is the probability that we like the video. We start with a stem:[\theta \sim \mathrm{Beta}(2,2)] prior over probability, and 
+
+* For video A, we have observed 10k successess and 50 failures in a total of 10,050 trials. Plug in and the posterior is stem:[\mathrm{Beta}(10002,52)].
+* For video B, we have observed 10 successess and 0 failures in a total of 10 trials. Plug in and the posterior is stem:[\mathrm{Beta}(12,2)].
+
+image::.\images\video_likes_dist.png[align='center',900,300]
+
+If we see enough evidence, eventually the beta distribution just looks like a straight line at the true probability. For video B, we haven't seen much information, so we have to hold out the belief it's uncertain over a range.
+
+So given these posterior distributions, how can we decide if one video is better than the other? For each video, we can calculate the probability that the true probability of liking the video is greater than 0.90, stem:[P(\theta>0.90)]. For video A it turns out to be 1, and for video B it is less than 1.
+
+== References ==
+. Murphy, K. P. (2012). Machine learning: A Probabilistic Perspective. MIT Press.
+. Stanford Online. (2023, October 9). Stanford CS109 Probability for Computer Scientists. Beta. 2022. Lecture 16 [Video]. YouTube. https://www.youtube.com/watch?v=aOhk9mFrHdU
+. Beta distribution. (n.d.). https://chrispiech.github.io/probabilityForComputerScientists/en/part4/beta/
+

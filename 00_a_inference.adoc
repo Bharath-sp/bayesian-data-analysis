@@ -1,0 +1,11 @@
+= Inference =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+How can we change our beliefs in the face of new information?
+
+== Introduction ==
+An inference is the task of how we change a random variables' belief (PMF or PDF) in a probabilistic model when we see observations.
+

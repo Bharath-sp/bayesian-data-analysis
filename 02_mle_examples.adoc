@@ -207,20 +207,10 @@ Set both equations to 0 and solve for stem:[\mu, \sigma^2]:
 As we can see the MLE estimate of mean from the given data is unbiased, but the estimate of variance is biased.
 
 == MLE for Multinomial ==
-Consider a sample of stem:[n] i.i.d random variables stem:[Y_1, Y_2, \dots, Y_n]. Each stem:[Y_i] is drawn from one of stem:[m] outcomes. Probability of each outcome on a single trial is given by stem:[p_i], where stem:[\sum_{i=1}^m p_i =1].
+Say we rolled a 6-sided die 12 times and observed: stem:[[1,1,1,2,2,4,4,4,5,6,6,6\]]. There are 6 outcomes in this case, so the probability of each outcome on a single trial is stem:[p_i = \frac{1}{6}] (if it is a fair die).
 
-Suppose each RV is outcome of 6-sided die. Say we rolled the die 12 times and observed: stem:[[1,1,1,2,2,4,4,4,5,6,6,6\]]. There are 6 outcomes in this case, so the probability of each outcome on a single trial is stem:[p_i = \frac{1}{6}] (if it is a fair die).
+Let stem:[X_i] be the number of trials with outcome stem:[i], where stem:[\sum_{i=1}^m X_i = n]. In our case, stem:[X_1 = 3, X_2 = 2, X_3=0, X_4 = 3, X_5=1, X_6=3]. The distribution of stem:[(X_1, X_2, \dots, X_m)] is called the Multinomial distribution and it is a multivariate distribution, stem:[\mathbf{X} \sim \text{Multinomial}(n,\mathbf{p})].
 
-Let stem:[X_i] be the number of trials with outcome stem:[i], where stem:[\sum_{i=1}^m X_i = n]. In our case, stem:[X_1 = 3, X_2 = 2, X_3=0, X_4 = 3, X_5=1, X_6=3]. The distribution of stem:[(X_1, X_2, \dots, X_m)] is called the Multinomial distribution and it is a multivariate distribution.
-
-[NOTE]
-====
-The multinomial distribution is a generalization of the binomial distribution to more than two categories.
-
-Compare this with flipping a coin experiment. We consider a sample of stem:[n] i.i.d random variables stem:[Y_1, Y_2, \dots, Y_n]. Each stem:[Y_i] is drawn from one of 2 outcomes, heads or tails. Probability of observing heads and tails on a single trial is given by stem:[p] and stem:[1-p] respectively. We have a formal name for this distribution, stem:[Y_i \sim \mathrm{Ber}(p)].
-
-Say we observed stem:[[0,1,0,0,1,1,0,1,0,1,0,0\]]. And let stem:[X] be the number of trials with heads. Say in our case, stem:[X=5]. This distribution of stem:[X] is known as Binomial and it is an univariate distribution.
-====
 
 Given a sample stem:[(x_1, x_2, \dots, x_m)], find the MLE estimate of the probabilities of each outcome stem:[\textbf{p} = (p_1, p_2, \dots, p_m)].
 
@@ -239,7 +229,7 @@ Our parametric space is stem:[p_i \in [0,1\]]. For a specified stem:[(p_1, p_2, 
 ++++
 \begin{align*}
 L(\textbf{p}) & = P(x_1, x_2, \dots, x_m \,|\, n,\textbf{p} ) \\
-& = \frac{n!}{x_1! x_2! \dots x_m!} (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m}) \text{ such that } \sum_{i=1}^m p_i = 1
+& = \frac{n!}{x_1! x_2! \dots x_m!} (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m})
 \end{align*}
 ++++
 
@@ -252,7 +242,7 @@ The log-likelihood of our data point is given by,
 \begin{align*}
 LL(\textbf{p}) = \log L(\textbf{p}) & = \log \left[ \frac{n!}{x_1! x_2! \dots x_m!} (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m}) \right] \\
 & = \log \frac{n!}{x_1! x_2! \dots x_m!} + \log (p_1^{x_1} p_2^{x_2} \dots p_m^{x_m}) \\
-& = \log n! - \sum_{i=1}^m \log x_i! + \sum_{i=1}^m x_i \log p_i && \text{ such that } \sum_{i=1}^m p_i = 1
+& = \log n! - \sum_{i=1}^m \log x_i! + \sum_{i=1}^m x_i \log p_i
 \end{align*}
 ++++
 

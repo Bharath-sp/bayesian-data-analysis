@@ -1,0 +1,9 @@
+= Sampling Techniques =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Introduction ==
+In the Laplace approximation, we approximated the posterior distribution as a Gaussian. There are other approximation techniques in which we approximate the posterior as other distributions or mixture of Gaussians, etc.

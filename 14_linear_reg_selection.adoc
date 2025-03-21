@@ -1,0 +1,163 @@
+= Linear Regression Model Selection =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Hyperparameters ==
+In the Bayesian linear regression, we compute the posterior over the parameters using Bayes' theorem as
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) = \frac{p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) \cdot p(\mathbf{w})}{p(\mathcal{T} \, | \, \mathcal{X})}
+++++
+
+where stem:[\mathcal{X}] is the set of training inputs and stem:[\mathcal{T}] the collection of corresponding training targets.
+
+* stem:[p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w})] is the likelihood.
+* stem:[p(\mathbf{w})] is the parameter prior.
+* The denominator term is the marginal likelihood or evidence.
++
+[stem]
+++++
+p(\mathcal{T} \, | \, \mathcal{X}) = \int p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) \, p(\mathbf{w}) d\mathbf{w}
+++++
++
+CAUTION: The marginal likelihood averages with respect to the parameter prior and not the parameter posterior. And it can be thought of predicting the training targets stem:[\mathcal{T}] and not the test targets stem:[y^*]. 
+
+All these quantities are actually conditioned on the hyperparameter values (as we set those in advance). Then the marginal likelihood is actually stem:[p(\mathcal{T} \, | \, \mathcal{X}, \lambda)], where stem:[\lambda] is any general hyperparameter.
+
+[stem]
+++++
+p(\mathcal{T} \, | \, \mathcal{X}, \lambda) = \int p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}, \lambda) \, p(\mathbf{w} \, | \, \lambda) d\mathbf{w}
+++++
+
+The marginal likelihood, which is a function of stem:[\lambda], tells us how likely a given stem:[\lambda] explains or models the given data. In the case of linear regression, we can compute the marginal likelihood in closed form. Then we can optimize the computed marginal likelihood to learn the hyperparameters.
+
+*What are the hyperparameters here?*
+
+In the probabilistic linear regression setup, the variance terms take the role of hyperparameters. When we assume a large variance in prior, we place less restriction on the parameters to be close to the mean. And when assume a small variance, we place more restriction on the parameters to be close to the mean.
+
+* In the above equation, the likelihood of a single data point stem:[p(t_n \, | \, x_n, \mathbf{w})] is stem:[\mathcal{N}(t_n \, | \, \mathbf{w}^\top\mathbf{x}_n, \sigma^2)]. Here stem:[\sigma^2] is a hyperparameter.
+
+* The prior stem:[p(\mathbf{w})] is stem:[\mathcal{N}(\mathbf{w} \, | \, \mathbf{0}, b^2\mathbf{I})]. Here stem:[b^2] is a hyperparameter.
+
+The role of stem:[\sigma^2] and stem:[b^2] is similar to the regularization constant stem:[\lambda] that we encounter in the standard regularized least squares regression.
+
+====
+While theoretically possible, estimating the prior mean using marginal likelihood is uncommon in practice. Instead, we usually fix stem:[\mathbf{m}_0 = \mathbf{0}] unless there is strong prior knowledge about the expected values of stem:[\mathbf{w}].
+====
+
+In the computation of the posterior distribution of stem:[\mathbf{w}], we have been choosing the values for these hyperparameters stem:[\sigma^2] and stem:[b^2] using the validation set approach. But now, let's estimate these using the Bayesian framework. The procedure requires us to compute the marginal likelihood first.
+
+
+== Marginal Likelihood Computation ==
+For a fixed model stem:[M], and for a given hyperparameters stem:[\sigma^2, \mathbf{m}_0, \mathbf{S}_0], the marginal likelihood is
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{t} \, | \, \mathbf{X}) & = \int p(\mathbf{t} \, | \, \mathbf{X}, \mathbf{w}) \, p(\mathbf{w}) d\mathbf{w} \\
+& = \int \mathcal{N}(\mathbf{t} \, | \, \mathbf{Xw}, \sigma^2 \mathbf{I}) \, \mathcal{N}(\mathbf{w} \, | \, \mathbf{m}_0, \mathbf{S}_0) d\mathbf{w} \\
+\end{align*}
+++++
+
+====
+*A general result:*
+
+Suppose that we are given a Gaussian marginal distribution stem:[p(\mathbf{x})] and a Gaussian conditional distribution stem:[p(\mathbf{y} \, | \, \mathbf{x})] in which stem:[p(\mathbf{y} \, | \, \mathbf{x})] has a mean that is a linear function of stem:[\mathbf{x}], and a covariance which is independent of stem:[\mathbf{x}].
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{x}) & = \mathcal{N}(\mathbf{x} \, | \, \boldsymbol{\mu}, \mathbf{\Lambda}^{-1}) \\
+p(\mathbf{y} \, | \, \mathbf{x}) & = \mathcal{N}(\mathbf{y} \, | \, \mathbf{Ax}+ \mathbf{b}, \mathbf{L}^{-1})
+\end{align*}
+++++
+
+The marginal distribution of stem:[\mathbf{y}] is given as
+
+[stem]
+++++
+p(\mathbf{y}) = \mathcal{N}(\mathbf{y} \, | \, \mathbf{A} \boldsymbol{\mu} + \mathbf{b}, \mathbf{L}^{-1} +  \mathbf{A}\mathbf{\Lambda}^{-1}\mathbf{A}^\top)
+++++
+
+If the mean is not a linear function of stem:[\mathbf{x}], then we cannot marginalize out stem:[\mathbf{x}] and no closed form can be obtained for the marginal distribution.
+====
+
+In our case
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{w}) & = \mathcal{N}(\mathbf{w} \, | \, \mathbf{m}_0, \mathbf{S}_0) \\
+p(\mathbf{t} \, | \, \mathbf{X}, \mathbf{w}) & = \mathcal{N}(\mathbf{t} \, | \, \mathbf{Xw}, \sigma^2 \mathbf{I})
+\end{align*}
+++++
+
+The marginal likelihood is given by
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{t} \, | \, \mathbf{X}) & = \mathcal{N}(\mathbf{t} \, | \, \mathbf{X}\mathbf{m}_0,  \mathbf{X} \mathbf{S}_0  \, \mathbf{X}^\top + \sigma^2 \mathbf{I} ) \\
+& = (2\pi)^{\frac{-N}{2}} \text{det}(\mathbf{X} \mathbf{S}_0  \, \mathbf{X}^\top + \sigma^2 \mathbf{I})^{\frac{-1}{2}} \cdot \text{exp}
+\left( \frac{-1}{2} (\mathbf{t}-\mathbf{X}\mathbf{m}_0)^\top (\mathbf{X} \mathbf{S}_0  \, \mathbf{X}^\top + \sigma^2 \mathbf{I})^{-1} (\mathbf{t}-\mathbf{X}\mathbf{m}_0 ) \right)
+\end{align*}
+++++
+
+The log-marginal likelihood simplifies to
+
+[stem]
+++++
+\begin{align*}
+\log p(\mathbf{t} \, | \, \mathbf{X}) = -\frac{1}{2} \log |\mathbf{X} \mathbf{S}_0  \, \mathbf{X}^\top + \sigma^2 \mathbf{I}| -\frac{1}{2} (\mathbf{t}-\mathbf{X}\mathbf{m}_0)^\top (\mathbf{X} \mathbf{S}_0  \, \mathbf{X}^\top + \sigma^2 \mathbf{I})^{-1} (\mathbf{t}-\mathbf{X}\mathbf{m}_0 ) + \text{const}
+\end{align*}
+++++
+
+We can now use this to find the optimal values for the hyperparameters.
+
+== Optimize the Hyperparameters ==
+Let's assume a prior stem:[\mathbf{w} \sim \mathcal{N}(\mathbf{0}, b^2\mathbf{I})], the log-marginal likelihood simplifies to
+
+[stem]
+++++
+\begin{align*}
+\log p(\mathbf{t} \, | \, \mathbf{X}) = -\frac{1}{2} \log | b^2 \mathbf{X} \mathbf{X}^\top + \sigma^2 \mathbf{I}| -\frac{1}{2} \mathbf{t}^\top (b^2\mathbf{X}\mathbf{X}^\top + \sigma^2 \mathbf{I})^{-1} \mathbf{t} + \text{const}
+\end{align*}
+++++
+
+Now we would like to select the best model stem:[M_k] among a list of models and also optimize the hyperparameters stem:[\sigma^2, b^2] for the chosen model.
+
+In general, we fix a more sophisticated model and then optimize the marginal likelihood to find the best values for the hyperparameters. The optimal hyperparameters stem:[\sigma^2] and stem:[b^2] are found by maximizing the log-marginal likelihood with respect to stem:[\sigma^2] and stem:[b^2] respectively. This procedure is known as maximum marginal likelihood estimation (MMLE), also known as *Empirical Bayes*.
+
+[stem]
+++++
+\theta^* = \arg \max_{\theta} \log p(\mathbf{t} \, | \, \mathbf{X}, \theta)
+++++
+
+This is typically done using:
+
+. Gradient-based optimization (e.g., Newton's method, gradient ascent).
+. Grid search if the hyperparameter space is small.
+. Expectation-Maximization (EM) if hyperparameters involve hierarchical priors.
+
+We can either maximize the log-marginal likelihood or minimize the negative of the log-marginal likelihood. The negative of the log-marginal likelihood is
+
+[stem]
+++++
+\begin{align*}
+- \log p(\mathbf{t} \, | \, \mathbf{X}) = \frac{1}{2} \mathbf{t}^\top (b^2\mathbf{X}\mathbf{X}^\top + \sigma^2 \mathbf{I})^{-1} \mathbf{t} + \frac{1}{2} \log | b^2 \mathbf{X} \mathbf{X}^\top + \sigma^2 \mathbf{I}| + \text{const}
+\end{align*}
+++++
+
+The first term represents the data loss, i.e., how well a value of stem:[\sigma^2] and stem:[b^2] can model the data and the second term acts as a regularization term, which prevents stem:[\sigma^2] and stem:[b^2] from taking extreme values. So the marginal likelihood implicitly has a regularization term.
+
+The above process can be repeated for each model stem:[M_k] under consideration. And finally, the models with their optimized hyperparameter values can be compared to select the best model. Returning to the polynomial regression problem, we can compare the model evidence against different orders of the polynomial stem:[M].
+
+.Image source: Bishop (2006, p. 168)
+image::.\images\bayes_model_selection_02.png[align='center', 400, 300]
+
+This shows that the evidence favours the model with stem:[M=3], since this is the simplest model which gives a good explanation for the observed data.
+

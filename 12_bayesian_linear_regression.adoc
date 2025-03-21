@@ -1,0 +1,339 @@
+= Bayesian Linear Regression =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Introduction ==
+We are given a training data stem:[\{(\mathbf{x}_n, t_n)\}] for stem:[n =1,2,\dots, N] where stem:[\mathbf{x}_n \in \mathbb{R}^{D}, t_n \in \mathbb{R}]. The whole data can be represented as stem:[\{(\mathcal{X}, \mathcal{T})\}]. In the standard linear regression, we fit a model of the form
+
+[stem]
+++++
+t_n = w_0 x_{n0} + w_1 x_{n1} + \dots + w_D x_{nD} = \mathbf{w}^\top \mathbf{x}_n
+++++
+
+where stem:[\mathbf{w}] is the parameter vector. In the Bayesian linear regression, we consider these parameters to be random variables, define a prior and obtain a posterior distribution over stem:[\mathbf{w}]. And use this posterior to make predictions.
+
+Why do we need the Bayesian variant?
+
+* The Bayesian way help us bring some prior knowledge and use that in solving a new problem.
+* The Bayesian variant can model uncertainty and provide how much the model is uncertain about its prediction.
+* In the case of regularized linear regression, we tune the regularization constant stem:[\lambda] to select the right model. We perform cross-validation multiple times, and select the model that performs best on the validation dataset. Here we are relying on a fraction of data to select the model. So we may end up selecting a poor model at times. The Bayesion variant provides us a systematic way where we can make use of the entire dataset to select the right model.
+
+In the Bayesian learning setup, we have
+
+[stem]
+++++
+p(\mathbf{w} \,|\, \mathcal{D}) = \frac{p(\mathcal{D} \,|\, \mathbf{w}) \, p(\mathbf{w})}{p(\mathcal{D})}
+++++
+
+The marginal likelihood or evidence stem:[p(\mathcal{D})] helps us in model selection. The right hyperparameter values can be obtained by optimizing this quantity with respect to the hyperparameter of interest. When we optimize stem:[p(\mathcal{D})] with respect to any hyperparameter, we never end up selecting a model that overfits the data. This is because the process of computing stem:[p(\mathcal{D})] implicitly does some kind of regularization.
+
+== Likelihood ==
+In the standard linear regression, we model the conditional distribution of stem:[t_n] conditioned on the event stem:[x_n] as
+
+[stem]
+++++
+t_n | x_n \sim \mathcal{N}(\mathbf{w}^\top\mathbf{x}_n, \sigma^2)
+++++
+
+The MLE estimate gives us the optimal stem:[\mathbf{w}] that maximizes the likelihood of stem:[\mathcal{T}] for given stem:[\mathcal{X}]. The expression for the likelihood is
+
+[stem]
+++++
+p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) = \prod_{n=1}^{N} \frac{1}{\sigma \sqrt{2\pi}} \text{exp} \left( - \frac{(t_n - \mathbf{w}^\top\mathbf{x}_n)^2}{2\sigma^2} \right)
+++++
+
+On taking log, we get the log-likelihood
+
+[stem, id='equation_1']
+++++
+\begin{align}
+\log p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) & = \sum_{n=1}^N \log \left[
+    \frac{1}{\sigma \sqrt{2\pi}} \text{exp} \left( - \frac{(t_n - \mathbf{w}^\top\mathbf{x}_n)^2}{2\sigma^2} \right)
+    \right] \nonumber \\
+& = \sum_{n=1}^N - \log \sqrt{2\pi}\sigma - 
+    \frac{1}{2\sigma^2} \sum_{n=1}^N (t_n - \mathbf{w}^\top\mathbf{x}_n)^2  \nonumber \\
+& = - \frac{1}{2\sigma^2}  \sum_{n=1}^N (t_n - \mathbf{w}^\top\mathbf{x}_n)^2 + \text{const}  \nonumber \\
+& = - \frac{1}{2\sigma^2}  \left( \mathbf{t} - \mathbf{X}\mathbf{w} \right)^\top \left( \mathbf{t} - \mathbf{X}\mathbf{w} \right) + \text{const}
+\end{align}
+++++
+
+The MLE estimates turns out to be:
+
+[stem]
+++++
+\hat{\mathbf{w}}_{\text{MLE}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{t}
+++++
+
+*Inference:*
+
+We are given a training data stem:[\mathcal{D} = \{(\mathbf{x}_n, t_n)\}_{n=1}^N] and say we have found the MLE estimate stem:[\hat{\mathbf{w}}_{\text{MLE}}] based on this training dataset. Then, we can make use of this to predict the output for a new test data point stem:[\mathbf{x}^*].
+
+[stem]
+++++
+p(t^* \, | \, \hat{\mathbf{w}}_{\text{MLE}}, \mathbf{x}^*) \sim \mathcal{N}(\hat{\mathbf{w}}_{\text{MLE}}^\top \, \, \mathbf{x}^*, \sigma^2)
+++++
+
+This results in a single line (in 2D) or a single hyperplane (in more than 2D) with coefficients stem:[\hat{\mathbf{w}}_{\text{MLE}}], passing through the data cloud as close as possible. We rely on this single line to make prediction for our test points. This probably gives a worst prediction when our test data point is an out-of-distribution point. Therefore, relying on a single line for prediction possess risk.
+
+Here we get a distribution of stem:[t^*] for a given stem:[\mathbf{x}^*], but it doesn't reflect the model's uncertainty estimation capabilities, i.e., this variance doesn't reflect the uncertainty that the model has on its prediction. Moreover, there is no change in variance because we assumed a constant variance irrespective of where the inputs appear. But we want our model to exhibit low variance for the inputs that are seen during the training and high variance for those inputs that we never saw during the training. We want the variance to change depending upon where we observe the input.
+
+== Prior Distribution ==
+A prior can be considered over the parameters stem:[\mathbf{w}]. Let's assume a joint Gaussian prior, stem:[\mathbf{w} \sim \mathcal{N}(\mathbf{m}_0, \mathbf{S}_0)], where stem:[\mathbf{m}_0] is the mean stem:[D]-dimensional vector and stem:[\mathbf{S}_0] is the variance-covariance stem:[D \times D] matrix.
+
+[stem, id='equation_2']
+++++
+\begin{align}
+p{(\mathbf{w})} & = \frac{1}{\sqrt{(2\pi)^D |\mathbf{S}_0|}} \text{exp} \left( - \frac{1}{2} (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0)  \right) \nonumber \\
+\log p(\mathbf{w}) & = \log \left( \frac{1}{\sqrt{(2\pi)^D |\mathbf{S}_0|}} \right) + \left( - \frac{1}{2} (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0)  \right) \nonumber \\
+& = - \frac{1}{2} (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0) + \text{const} \\
+\end{align}
+++++
+
+== Posterior Distribution ==
+We compute the posterior over the parameters using Bayes' theorem as
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) = \frac{p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) \cdot p(\mathbf{w})}{p(\mathcal{T} \, | \, \mathcal{X})}
+++++
+
+where stem:[\mathcal{X}] is the set of training inputs and stem:[\mathcal{T}] the collection of corresponding training targets.
+
+* stem:[p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w})] is the likelihood.
+* stem:[p(\mathbf{w})] is the parameter prior.
+* The denominator term is the marginal likelihood or evidence.
++
+[stem]
+++++
+p(\mathcal{T} \, | \, \mathcal{X}) = \int p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) \, p(\mathbf{w}) d\mathbf{w}
+++++
++
+This is independent of the parameters stem:[\mathbf{w}] and ensures that the posterior is normalized. We can think of the marginal likelihood as the likelihood averaged over all possible parameter settings (with respect to the prior distribution stem:[p(\mathbf{w})]).
+
+The parameter posterior can be computed in closed form as
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) \sim \mathcal{N}(\mathbf{m}_N, \mathbf{S}_N )
+++++
+
+[stem]
+++++
+\begin{align*}
+\mathbf{S}_N & = (\mathbf{S}_0^{-1} + \sigma^{-2} \mathbf{X}^\top \mathbf{X} )^{-1} \\
+\mathbf{m}_N & = \mathbf{S}_N (\mathbf{S}_0^{-1} \mathbf{m}_0 + \sigma^{-2} \mathbf{X}^\top\mathbf{t})
+\end{align*}
+++++
+
+where stem:[N] indicates the size of the training set.
+
+**Proof:**
+
+Bayes' theorem tells us that the posterior stem:[p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})] is proportional to the product of the likelihood and the prior. We can transform the problem into log-space, and solve for the mean and covariance matrix of the posterior. The sum of the log-prior and the log-likelihood (from <<equation_1, Equation 1>> and <<equation_2, Equation 2>> respectively) is
+
+[stem]
+++++
+\begin{align*}
+\log p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) + \log p(\mathbf{w}) & = - \frac{1}{2\sigma^2}  \left( \mathbf{t} - \mathbf{X}\mathbf{w} \right)^\top \left( \mathbf{t} - \mathbf{X}\mathbf{w} \right) - \frac{1}{2} (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0) + \text{const} \\
+
+& = - \frac{1}{2} \left( \sigma^{-2} \left( \mathbf{t} - \mathbf{X}\mathbf{w} \right)^\top \left( \mathbf{t} - \mathbf{X}\mathbf{w} \right) + (\mathbf{w} - \mathbf{m}_0)^\top \mathbf{S}_0^{-1} (\mathbf{w} - \mathbf{m}_0) \right) + \text{const} \\
+\end{align*}
+++++
+
+We now factorize, which yields
+
+[stem, id='equation_3']
+++++
+\begin{align}
+& = - \frac{1}{2} \left( \sigma^{-2} \mathbf{t}^\top \mathbf{t} - \textcolor{orange}{2 \sigma^{-2} \mathbf{t}^\top \mathbf{Xw}} + \textcolor{blue}{\mathbf{w}^\top \sigma^{-2} \mathbf{X}^\top \mathbf{Xw} + \mathbf{w}^\top \mathbf{S}_0^{-1} \mathbf{w}} - \textcolor{orange}{2 \mathbf{m}_0^\top \mathbf{S}_0^{-1} \mathbf{w}} + \mathbf{m}_0^\top \mathbf{S}_0^{-1} \mathbf{m}_0 \right) + \text{const} \nonumber \\
+
+& = - \frac{1}{2} \left( \textcolor{blue}{\mathbf{w}^\top(\sigma^{-2} \mathbf{X}^\top \mathbf{X} + \mathbf{S}_0^{-1}) \mathbf{w}} - \textcolor{orange}{2 (\sigma^{-2} \mathbf{X}^\top \mathbf{t} + \mathbf{S}_0^{-1} \mathbf{m}_0)^\top  \mathbf{w}} \right) + \text{const}
+\end{align}
+++++
+
+* The black terms are constants, which are independent of stem:[\mathbf{w}].
+* The stem:[\textcolor{orange}{\text{orange}}] terms are terms that are linear in stem:[\mathbf{w}].
+* The stem:[\textcolor{blue}{\text{blue}}] terms are the ones that are quadratic in stem:[\mathbf{w}].
+
+We find that <<equation_3, Equation 3>> is quadratic in stem:[\mathbf{w}]. The fact that the unnormalized log-posterior distribution is a (negative) quadratic form implies that the posterior stem:[p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})] is Gaussian, i.e.,
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) = \text{exp}(\log p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})) \propto \text{exp}\left(
+\log p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) + \log p(\mathbf{w})
+\right)  \\
+\propto \text{exp}\left( - \frac{1}{2} \left( \textcolor{blue}{\mathbf{w}^\top(\sigma^{-2} \mathbf{X}^\top \mathbf{X} + \mathbf{S}_0^{-1}) \mathbf{w}} - \textcolor{orange}{2 (\sigma^{-2} \mathbf{X}^\top \mathbf{t} + \mathbf{S}_0^{-1} \mathbf{m}_0)^\top  \mathbf{w}} \right) \right)
+\end{align*}
+++++
+
+If our posterior were to follow stem:[\mathcal{N}(\mathbf{m}_N, \mathbf{S}_N )], the desired log-posterior is
+
+[stem, id='equation_4']
+++++
+\begin{align}
+\log p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) & = \log \left( \frac{1}{\sqrt{(2\pi)^D |\mathbf{S}_N|}} \right) + \left( - \frac{1}{2} (\mathbf{w} - \mathbf{m}_N)^\top \mathbf{S}_N^{-1} (\mathbf{w} - \mathbf{m}_N)  \right) \nonumber \\
+
+
+& = -\frac{1}{2} (\mathbf{w} - \mathbf{m}_N)^\top \mathbf{S}^{-1}_N (\mathbf{w} - \mathbf{m}_N) + \text{const} \nonumber \\
+
+& = -\frac{1}{2} \left( \textcolor{blue}{\mathbf{w}^\top \mathbf{S}^{-1}_N \mathbf{w}} - \textcolor{orange}{2\mathbf{m}^\top_N \, \mathbf{S}^{-1}_N \, \mathbf{w}} + \mathbf{m}^\top_N \,  \mathbf{S}^{-1}_N \,  \mathbf{m}_N \right) + \text{const}
+\end{align}
+++++
+
+By comparing <<equation_3, Equation 3>> and <<equation_4, Equation 4>>, we see that
+
+[stem]
+++++
+\begin{align*}
+& \mathbf{S}^{-1}_N = \sigma^{-2} \mathbf{X}^\top \mathbf{X} + \mathbf{S}_0^{-1} \\
+\iff & \mathbf{S}_N = \left( \sigma^{-2} \mathbf{X}^\top \mathbf{X} + \mathbf{S}_0^{-1} \right)^{-1}
+\end{align*}
+++++
+
+and 
+
+[stem]
+++++
+\begin{align*}
+& \mathbf{m}^\top_N \,  \mathbf{S}^{-1}_N = \left( \sigma^{-2} \mathbf{X}^\top \mathbf{t} + \mathbf{S}_0^{-1} \mathbf{m}_0 \right)^\top \\
+\iff & \mathbf{m}_N = \mathbf{S}_N \left( \sigma^{-2} \mathbf{X}^\top \mathbf{t} + \mathbf{S}_0^{-1} \mathbf{m}_0 \right)
+\end{align*}
+++++
+
+Hence
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) \sim \mathcal{N}\left(\mathbf{S}_N (\mathbf{S}_0^{-1} \mathbf{m}_0 + \sigma^{-2} \mathbf{X}^\top\mathbf{t}), (\mathbf{S}_0^{-1} + \sigma^{-2} \mathbf{X}^\top \mathbf{X} )^{-1} \right)
+++++
+
+When we assume the prior mean stem:[\mathbf{m}_0 = \mathbf{0}] and the prior covariance stem:[\mathbf{S}_0 = b^2 \mathbf{I}], we get
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) \sim \mathcal{N} \left(\sigma^{-2} \mathbf{S}_N \mathbf{X}^\top\mathbf{t}, \left(\frac{1}{b^2} \mathbf{I} + \sigma^{-2} \mathbf{X}^\top \mathbf{X} \right)^{-1} \right)
+++++
+
+The mode of this distribution (which is the same as the mean for Gaussian distributions) is
+
+[stem]
+++++
+\begin{align*}
+\text{Mode}(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) & = \sigma^{-2} \mathbf{S}_N \mathbf{X}^\top\mathbf{t} \\
+& = \sigma^{-2} \left(\frac{1}{b^2} \mathbf{I} + \sigma^{-2} \mathbf{X}^\top \mathbf{X} \right)^{-1} \mathbf{X}^\top\mathbf{t} \\
+& = \left(\frac{\sigma^2}{b^2} \mathbf{I} + \mathbf{X}^\top \mathbf{X} \right)^{-1} \mathbf{X}^\top\mathbf{t}
+\end{align*}
+++++
+
+This is the same that we obtained for the MAP estimate of stem:[\mathbf{w}].
+
+*Inference with the MAP estimate:*
+
+We use the MAP estimate the same way as we did with the MLE estimate. We predict the output for a new test data point stem:[\mathbf{x}^*] as
+
+[stem]
+++++
+p(t^* \, | \, \hat{\mathbf{w}}_{\text{MAP}}, \mathbf{x}^*) \sim \mathcal{N}(\hat{\mathbf{w}}_{\text{MAP}}^\top \, \, \mathbf{x}^*, \sigma^2)
+++++
+
+And this suffers from the same problem that we have with the MLE estimate.
+
+== Graphical View ==
+Let's take a simple linear regression case. Here stem:[w] in the model represents the slope of the line. For different value of stem:[w], the slope of the line varies. Say we have some domain knowledge and we know that stem:[w \sim \mathcal{N}(0.3, 0.1)]. We incorporate this as the prior, observe the data and compute the likelihood, and obtain the posterior, may be stem:[w \sim \mathcal{N}(0.45, 0.05)].
+
+image::.\images\bayes_linear_01.png[align='center', 600, 400]
+
+We use this posterior to make predictions. We average out the predictions from all these lines to get our final prediction. This way we get a more robust prediction as we rely on multiple lines to make predictions. Consequently, we end up with a model having low bias, low variance, and better generalization performance. This is known as Bayesian model averaging. In some sense, this approach is similar to ensemble models approach.
+
+**Sequential Learning:**
+
+Let's consider a prior stem:[\mathbf{w} = (w_0, w_2) \sim \mathcal{N}(\mathbf{0}, \mathbf{I})]. We observe the data points, and compute the likelihood which is a function of stem:[w_0] and stem:[w_1]. And then obtain the posterior where we see the mean of stem:[w_1] is 0.5 and the mean of stem:[w_2] is 1. And the variance has reduced after observing the data.
+
+.Image source: Bishop (2006, p. 155)
+image::.\images\bayes_linear_02.png[align='center', 500, 700]
+
+If data points arrive sequentially, then the posterior distribution at any stage acts as the prior distribution for the subsequent data point. As we see more data points, the posterior gets updated. This illustrates the sequential Bayesian learning for a simple linear model of the form stem:[y=w_0 + w_1 x].
+
+If we sample from the posterior distribution, we will be able to model our data well. And once we have our posterior, we can use it make predictions.
+
+== Bayesian Inference ==
+Suppose we are given a training data stem:[\mathcal{D} = \{(\mathbf{x}_n, t_n)\}_{n=1}^N] and we want to predict stem:[t^*] for the test data point stem:[\mathbf{x}^*]. To be precise, we want to find the distribution of stem:[t^*] for the given input stem:[\mathbf{x}^*]. The posterior predictive distribution at a test point stem:[\mathbf{x}^*] is
+
+[stem]
+++++
+\begin{align*}
+p(t^* \, | \, \mathbf{x}^*, \mathcal{X}, \mathcal{T}) & = \int p(t^* \, | \, \mathbf{x}^*, \mathbf{w}) \, p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) \, d\mathbf{w} \\
+& = \mathbf{E}_{p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})}[p(t^* \, | \, \mathbf{x}^*, \mathbf{w})]
+\end{align*}
+++++
+
+which we can interpret as the average prediction of stem:[p(t^* \, | \, \mathbf{x}^*, \mathbf{w})] for all plausible parameters stem:[\mathbf{w}] according to the posterior distribution stem:[p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})].
+
+NOTE: Fundamentally, we are marginalizing out stem:[\mathbf{w}] from the joint distribution over stem:[t^*] and stem:[\mathbf{w}], which is stem:[p(t^*, \mathbf{w} \, | \, \mathbf{x}^*, \mathcal{X}, \mathcal{T})]
+
+[stem]
+++++
+\begin{align*}
+p(t^* \, | \, \mathbf{x}^*, \mathcal{X}, \mathcal{T}) & = \int \mathcal{N}(t^* \, | \, \mathbf{x}^{*\top} \mathbf{w}, \sigma^2) \, \mathcal{N}(\mathbf{w} \, | \, \mathbf{m}_N, \mathbf{S}_N) \, d\mathbf{w}
+\end{align*}
+++++
+
+====
+*A general result:*
+
+Suppose that we are given a Gaussian marginal distribution stem:[p(\mathbf{x})] and a Gaussian conditional distribution stem:[p(\mathbf{y} \, | \, \mathbf{x})] in which stem:[p(\mathbf{y} \, | \, \mathbf{x})] has a mean that is a linear function of stem:[\mathbf{x}], and a covariance which is independent of stem:[\mathbf{x}].
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{x}) & = \mathcal{N}(\mathbf{x} \, | \, \boldsymbol{\mu}, \mathbf{\Lambda}^{-1}) \\
+p(\mathbf{y} \, | \, \mathbf{x}) & = \mathcal{N}(\mathbf{y} \, | \, \mathbf{Ax}+ \mathbf{b}, \mathbf{L}^{-1})
+\end{align*}
+++++
+
+The marginal distribution of stem:[\mathbf{y}] is given as
+
+[stem]
+++++
+p(\mathbf{y}) = \mathcal{N}(\mathbf{y} \, | \, \mathbf{A} \boldsymbol{\mu} + \mathbf{b}, \mathbf{L}^{-1} +  \mathbf{A}\mathbf{\Lambda}^{-1}\mathbf{A}^\top)
+++++
+
+If the mean is not a linear function of stem:[\mathbf{x}], then we cannot marginalize out stem:[\mathbf{x}] and no closed form can be obtained for the marginal distribution.
+====
+
+In our case
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) & = \mathcal{N}(\mathbf{w} \, | \, \mathbf{m}_N, \mathbf{S}_N) \\
+p(t^* \, | \, \mathbf{x}^*, \mathbf{w}) & = \mathcal{N}(t^* \, | \, \mathbf{x}^{*\top} \mathbf{w}, \sigma^2)
+\end{align*}
+++++
+
+The marginal distribution (predictive posterior) is given by
+
+[stem]
+++++
+p(t^* \, | \, \mathbf{x}^*, \mathcal{X}, \mathcal{T}) = \mathcal{N}(t^* \, | \, \mathbf{x}^{*\top} \mathbf{m}_N, \sigma^2 +  \mathbf{x}^{*\top} \mathbf{S}_N \, \mathbf{x^*})
+++++
+
+where stem:[\mathbf{m}_N = \mathbf{S}_N \left( \sigma^{-2} \mathbf{X}^\top \mathbf{t} + \mathbf{S}_0^{-1} \mathbf{m}_0 \right)] and stem:[\mathbf{S}_N = \left( \sigma^{-2} \mathbf{X}^\top \mathbf{X} + \mathbf{S}_0^{-1} \right)^{-1}].
+
+Now see that the variance-covariance of the predictive posterior is a function of stem:[\mathbf{x}^*]. On further simplifying it using the Woodbury formula, we get terms involving the dot product of stem:[\mathbf{x}^*] and stem:[\mathbf{X}]. This term quantifies the similarity between stem:[\mathbf{x}^*] and stem:[\mathbf{X}].
+
+* If stem:[\mathbf{x}^*] is far away from the training points stem:[\mathbf{X}], the variance will be larger.
+* If stem:[\mathbf{x}^*] is close to the training data stem:[\mathbf{X}], the variance will be smaller.
+
+In the below example, the green curve corresponds to the function from which the data points were generated (with the addition of Gaussian noise). We fit a model to data sets of various sizes. Data sets of size stem:[N=1, N=2, N=4, N=25] are shown in the four plots by the blue circles. Then the posterior predictive distribution can be obtained as
+
+.Image source: Bishop (2006, p. 157)
+image::.\images\bayes_linear_03.png[align='center', 500, 500]
+
+For each plot, the red curve shows the mean of the corresponding predictive distribution for each test data point. And the red shaded region spans one standard deviation either side of the mean, representing predictive uncertainty for each test data point.
+
+Note that the predictive uncertainty depends on where the input is and is smallest in the neighbourhood of the training data points. Also note that the level of uncertainty decreases as more data points are observed.

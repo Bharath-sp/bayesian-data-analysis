@@ -1,0 +1,100 @@
+= Laplace Approximation =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Introduction ==
+The Laplace approximation allows us to learn a Gaussian approximation to the actual posterior distribution, i.e., it allows us to find the parameters of this Gaussian distribution (mean and covariance) that very well approximates the posterior. It assumes that the posterior distribution is approximately Gaussian around the mode of the posterior distribution.
+
+For example, in the single parameter case, the behaviour of the actual posterior (which we cannot write in a mathematical expression) can have the form as below. We approximate it as a Gaussian around the mode of the posterior.
+
+image::.\images\laplace_approx_01.png[align='center', 200, 200]
+
+== Mean of the Gaussian ==
+The Laplace method assumes that the mean of this Gaussian and the mode of the posterior are the same. Thus, the MAP estimate will be the mean of the approximate distribution. For any model, the MAP estimate can be found by
+
+[stem]
+++++
+\hat{\mathbf{w}}_{\text{MAP}} = \underset{\mathbf{w}}{\operatorname{argmax }} \text{ } \left( \log (p(\mathbf{w})) + \sum_{i=1}^N \log p(\mathcal{T}| \, \mathcal{X}, \mathbf{w}) \right)
+++++
+
+The MAP estimate is the mode of the posterior. Thus, stem:[\hat{\mathbf{w}}_{\text{MAP}}] is considered as the mean of the Gaussian.
+
+== Covariance of the Gaussian ==
+The covariance of the Gaussian depends upon how the actual posterior surface behaves around the mode. From the figure above, we can observe that when the region around the mode is narrow, the variance of the resulting Gaussian will be less, and vice-versa. The form of the posterior distribution is defined only by the numerator term, and the denominator just normalizes the distribution.
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{w} \, | \, \mathcal{D}) = \frac{p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} )}{p(\mathcal{D})}
+\end{align*}
+++++
+
+We want to approximate this to a Gaussian. We do it as follows:
+
+[stem, id='eq_1']
+++++
+\begin{align}
+p(\mathbf{w} \, | \, \mathcal{D}) = \frac{p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} )}{p(\mathcal{D})} = \frac{1}{Z} e^{-E(\mathbf{w})}
+\end{align}
+++++
+
+where stem:[E(\mathbf{w})] is equal to the negative log of the unnormalized log posterior, stem:[E(\mathbf{w}) = - \log p(\mathbf{w}, \mathcal{D})], and stem:[Z = p(\mathcal{D})] is the normalization constant.
+
+A multivariate Gaussian stem:[\mathcal{N}(\mathbf{w} \, | \, \boldsymbol{\mu}, \boldsymbol{\Sigma}^{-1})] has the form:(stem:[\mathbf{w}] is D-dimensional)
+
+[stem, id='eq_2']
+++++
+\begin{align}
+q(\mathbf{w}) = \frac{1}{\sqrt{(2\pi)^D |\boldsymbol{\Sigma}|}} \text{exp} \left( - \frac{1}{2} (\mathbf{w} - \boldsymbol{\mu})^\top \boldsymbol{\Sigma}^{-1} (\mathbf{w} - \boldsymbol{\mu})  \right)
+\end{align}
+++++
+
+The Gaussian distribution has the property that its logarithm is a quadratic function of the variables. So stem:[\log q(\mathbf{w})] is quadratic in stem:[\mathbf{w}].
+
+We are trying to approximate stem:[p(\mathbf{w} \, | \, \mathcal{D}) \approx q(\mathbf{w})]. On comparing <<id_1, Equation 1>> and <<id_1, Equation 2>>, we observe that stem:[E(\mathbf{w})] should be a quadratic function in stem:[\mathbf{w}]. But stem:[E(\mathbf{w})] doesn't have a quadratic form in our case. So the idea is to get quadratic approximation of stem:[E(\mathbf{w})] and equate it to stem:[q(\mathbf{w})] to read out the covariance.
+
+=== Quadratic Approximation of the Posterior ===
+We know that only the numerator terms in <<id_1, Equation 1>>, i.e., stem:[E(\mathbf{w})] defines the shape of the distribution. So it is sufficient to  approximate the function stem:[E(\mathbf{w})]. We use Taylor expansion to get the quadratic approximation of stem:[E(\mathbf{w})]  around the mode. The MAP estimate is the mode of the posterior. Thus, we approximate stem:[E(\mathbf{w})] around the MAP estimate.
+
+A second-order Taylor expansion of stem:[E(\mathbf{w})] around stem:[\hat{\mathbf{w}}_{\text{MAP}}] is
+
+[stem]
+++++
+E(\mathbf{w}) \approx E(\hat{\mathbf{w}}_{\text{MAP}}) + (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top \mathbf{g} + \frac{1}{2} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top \mathbf{H} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top
+++++
+
+where stem:[\mathbf{g}] is the gradient and stem:[\mathbf{H}] is the Hessian of stem:[E(\mathbf{w})] evaluated at the mode.
+
+[stem]
+++++
+\begin{align*}
+\mathbf{g} & := \nabla E(\mathbf{w}) \big|_{\hat{\mathbf{w}}_{\text{MAP}}} \hspace{1cm} \text{  and  } \mathbf{H} := \nabla^2 E(\mathbf{w}) \big|_{\hat{\mathbf{w}}_{\text{MAP}}} = \frac{\partial^2 E(\mathbf{w}) }{\partial \mathbf{w} \partial \mathbf{w}^\top } \bigg|_{\hat{\mathbf{w}}_{\text{MAP}}}
+\end{align*}
+++++
+
+Note that stem:[E(\mathbf{w}) = - \log p(\mathbf{w}, \mathcal{D})= - \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} )]. The gradient term is stem:[\mathbf{0}] at stem:[\hat{\mathbf{w}}_{\text{MAP}}].
+
+[stem]
+++++
+E(\mathbf{w}) \approx E(\hat{\mathbf{w}}_{\text{MAP}}) + \frac{1}{2} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top \mathbf{H} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top
+++++
+
+Then, from <<id_1, Equation 1>>
+
+[stem]
+++++
+\begin{align*}
+\hat{p}(\mathbf{w} \, | \, \mathcal{D}) & \approx \frac{1}{Z} e^{- \left( E(\hat{\mathbf{w}}_{\text{MAP}}) + \frac{1}{2} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top \mathbf{H} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top \right)} \\
+& = \frac{1}{Z} e^{-  E(\hat{\mathbf{w}}_{\text{MAP}})} \,\, \text{exp} \left[ - \frac{1}{2} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top \mathbf{H} (\mathbf{w} - \hat{\mathbf{w}}_{\text{MAP}})^\top \right]
+\end{align*}
+++++
+
+On comparing it with <<id_2, Equation 2>>, we observe that it is stem:[\mathcal{N}(\mathbf{w} \, | \, \hat{\mathbf{w}}_{\text{MAP}}, \mathbf{H}^{-1})], where
+
+[stem]
+++++
+Z = p(\mathcal{D}) \approx \int \hat{p}(\mathbf{w} \, | \, \mathcal{D}) \, d\mathbf{w} = e^{-E(\hat{\mathbf{w}}_{\text{MAP}})} (2\pi)^{\frac{D}{2}} |\mathbf{H}|^{-\frac{1}{2}}
+++++

@@ -1,0 +1,180 @@
+= Bayesian Naive Bayes Classifier =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+The standard naive bayes classifier doesn't consider any distribution over the parameters. In Bayesian learning, we consider a distribution over the parameters, learn a posterior distibution over the parameters, and use this posterior to make predictions.
+
+Here let's look at the Bayesian variant of Bernoulli naive bayes classifier.
+
+== Likelihood ==
+In the standard Bernoulli naive bayes classifier, we model the joint distribution stem:[p(\mathbf{x}_n, t_n \, | \, \boldsymbol{\theta})]. The MLE estimate gives us the optimal stem:[\boldsymbol{\theta}] that maximizes the likelihood of the given data stem:[\mathcal{D}= \{(\mathbf{x}_n, t_n)\}]. The expression for the likelihood is
+
+[stem]
+++++
+p(\mathcal{D} \, | \, \boldsymbol{\theta}) = \prod_{c=1}^C \pi_c^{N_c} \prod_{j=1}^D \prod_{c=1}^C \theta_{jc}^{N_{jc}} (1- \theta_{jc})^{N_c - N_{jc}}
+++++
+
+The MLE estimates for Bernoulli Naive Bayes model turned out to be:
+
+[stem]
+++++
+\hat{\pi}_1 = \frac{N_1}{N} \hspace{1cm} \hat{\pi}_2 = 1 - \hat{\pi}_1 \hspace{1cm} \hat{\theta}_{jc} = \frac{N_{jc}}{N_c}
+++++
+
+*Inference:*
+
+Having found these estimates, we can use them to predict the class for a new test data point stem:[\mathbf{x}]
+
+[stem]
+++++
+\begin{align*}
+p(t=c \, | \, \mathbf{x}, \mathcal{D}) & \propto p(t=c \, | \, \boldsymbol{\hat{\pi}}) \prod_{j=1}^D p(x_j  \, | \, t=c, \hat{\theta}_{jc}) \\
+& \propto \hat{\pi}_c \prod_{j=1}^D (\hat{\theta}_{jc})^{\mathbb{I}(x_j=1)} (1-\hat{\theta}_{jc})^{\mathbb{I}(x_j=0)}
+\end{align*}
+++++
+
+The trouble with maximum likelihood is that it can overfit. A simple solution to overfitting is to be Bayesian. In the Bayesian variant,  we model a distribution over the parameters stem:[\boldsymbol{\theta}] of the naive Bayes model as well.
+
+== Prior Distribution ==
+The prior is considered over the parameters stem:[\boldsymbol{\pi}, \theta_{jc}]. As all these parameters are independent, we can write the joint distribution over the parameters as:
+
+[stem]
+++++
+p(\boldsymbol{\theta}) = p(\boldsymbol{\pi}) \prod_{j=1}^D \prod_{c=1}^C p(\theta_{jc})
+++++
+
+* Let's assume a Dirichlet prior over stem:[\boldsymbol{\pi} \sim \text{Dir}(\alpha_1, \dots, \alpha_C)].
+* Let's assume a Beta prior over each stem:[\theta_{jc}]. So each stem:[\theta_{jc} \sim \text{Beta}(\beta_0, \beta_1)].
+
+[stem]
+++++
+p(\boldsymbol{\theta}) = \frac{1}{B(\boldsymbol{\alpha})} \prod_{c=1}^C \pi_c^{\alpha_c -1} \prod_{j=1}^D \prod_{c=1}^C  \frac{1}{B(\beta_0, \beta_1)}\theta_{jc}^{\beta_0 -1} (1-\theta_{jc})^{\beta_1 -1}
+++++
+
+Often we just take stem:[\boldsymbol{\alpha} = \boldsymbol{1}] and stem:[\boldsymbol{\beta} = \boldsymbol{1}], corresponding to add-one or Laplace smoothing.
+
+== Posterior Distribution ==
+The posterior is given by (stem:[K] accumulates all the normalization constants)
+
+[stem]
+++++
+\begin{align*}
+p(\boldsymbol{\theta} \, | \, \mathcal{D}) & = K \cdot p(\mathcal{D} \, | \, \boldsymbol{\theta}) \, p(\boldsymbol{\theta})  \\
+& = K \cdot \prod_{c=1}^C \pi_c^{N_c} \prod_{j=1}^D \prod_{c=1}^C \theta_{jc}^{N_{jc}} (1- \theta_{jc})^{N_c - N_{jc}} \prod_{c=1}^C \pi_c^{\alpha_c -1} \prod_{j=1}^D \prod_{c=1}^C  \theta_{jc}^{\beta_0 -1} (1-\theta_{jc})^{\beta_1 -1} \\
+& = K \cdot \prod_{c=1}^C \pi_c^{N_c + \alpha_c -1} \prod_{j=1}^D \prod_{c=1}^C \theta_{jc}^{N_{jc} + \beta_0 -1} (1- \theta_{jc})^{N_c - N_{jc} + \beta_1 -1} \\
+& = p(\boldsymbol{\pi} \, | \, \mathcal{D}) \prod_{j=1}^D \prod_{c=1}^C p(\theta_{jc} \, | \, \mathcal{D})
+\end{align*}
+++++
+
+It turns out that
+
+* stem:[p(\boldsymbol{\pi} \, | \, \mathcal{D}) = \text{Dir}(N_1 + \alpha_1, \dots, N_C + \alpha_C)].
+* stem:[p(\theta_{jc} \, | \, \mathcal{D}) = \text{Beta}(N_{jc} + \beta_0, N_c - N_{jc} + \beta_1)].
+
+The posterior is the Dirichlet-beta distribution. The mode of this distribution gives us the MAP estimates.
+
+[stem]
+++++
+\hat{\pi}_{1} = \frac{N_c+\alpha_c - 1}{N+\alpha_0 - C} \hspace{1cm} \hat{\theta}_{jc} = \frac{N_{jc}+\beta_0 -1}{N_c+\beta_0 + \beta_1-2}
+++++
+
+where stem:[\alpha_0 = \alpha_1 + \dots + \alpha_C].
+
+*Inference:*
+
+Having found these estimates, we can use them to predict the class for a new test data point.
+
+[stem]
+++++
+\begin{align*}
+p(t=c \, | \, \mathbf{x}, \mathcal{D}) & \propto p(t=c \, | \, \boldsymbol{\hat{\pi}}) \prod_{j=1}^D p(x_j  \, | \, t=c, \hat{\theta}_{jc}) \\
+& \propto \hat{\pi}_c \prod_{j=1}^D (\hat{\theta}_{jc})^{\mathbb{I}(x_j=1)} (1-\hat{\theta}_{jc})^{\mathbb{I}(x_j=0)}
+\end{align*}
+++++
+
+
+When using the Naive Bayes assumption, it is recommended to make MAP estimate of the parameters. Because MLE estimates a probability of 0 for stem:[\theta_{jc}] when there is no data at all in the training set for stem:[(x_j = 1 \, \& \, t=c)] combination. This is the result of overfitting. Multiplying 0 to all the other probabilities makes our result 0. Laplace prior gives us the guarantee that no probability will either be 0 or 1.
+
+== Bayesian Inference ==
+The posterior predictive distribution for a test data point is (where stem:[\mathcal{D}] is the training data set)
+
+[stem]
+++++
+\begin{align*}
+p(t=c \, | \, \mathbf{x}, \mathcal{D}) & \propto p(t=c \, | \, \mathcal{D}) \prod_{j=1}^D p(x_j  \, | \, t=c, \mathcal{D}) \\
+& \propto \left[ \int p(t=c \, | \, \boldsymbol{\pi}) \, p(\boldsymbol{\pi} \, | \, \mathcal{D}) \, d\boldsymbol{\pi}  \right] \, \,  \prod_{j=1}^D \left[ \int p(x_j  \, | \, t=c, \theta_{jc}) \, p(\theta_{jc} \, | \, \mathcal{D}) \, d\theta_{jc}  \right] \\
+& \propto \left[ \int_{\pi} \pi_c \cdot \left[ \int p(\boldsymbol{\pi}\_{c}, \pi_c \, | \, \mathcal{D} ) d\boldsymbol{\pi}\_{c} \right] d\pi_c  \right] \prod_{j=1}^D \left[ \int \theta_{jc} \, p(\theta_{jc} \, | \, \mathcal{D}) \, d\theta_{jc}  \right] \\
+
+& \propto \left[ \int_{\pi} \pi_c \cdot p(\pi_c \, | \, \mathcal{D}) d\pi_c  \right] \prod_{j=1}^D \left[ \int \theta_{jc} \, p(\theta_{jc} \, | \, \mathcal{D}) \, d\theta_{jc}  \right] \\
+
+& \propto \mathbb{E}[\pi_c \, | \, \mathcal{D}] \cdot \prod_{j=1}^D \mathbb{E}[\theta_{jc}\, | \, \mathcal{D}] \\
+& \propto \frac{\alpha_c + N_c}{\alpha_0 + N} \cdot \prod_{j=1}^D \frac{\beta_0 + N_{jc}}{\beta_0 + \beta_1 + N_c} \\
+& \propto \bar{\pi}_c \prod_{j=1}^D (\bar{\theta}_{jc})^{\mathbb{I}(x_j=1)} (1-\bar{\theta}_{jc})^{\mathbb{I}(x_j=0)}
+\end{align*}
+++++
+
+where the Bayesian estimates turn out to be
+
+[stem]
+++++
+\begin{align*}
+\bar{\pi}_c & = \frac{\alpha_c + N_c}{\alpha_0 + N} && \text{where } \alpha_0 = \alpha_1 + \dots + \alpha_C  \\
+\bar{\theta}_{jc} & = \frac{\beta_0 + N_{jc}}{\beta_0 + \beta_1 + N_c}
+\end{align*}
+++++
+
+Here we have considered the full posterior distribution over the parameters and have used the mean of the posterior.
+
+== Example ==
+Say we are given a dataset with three binary features as below:
+
+[%autowidth]
+[%header,format=csv]
+|===
+ ,Good,Bad,Very,type
+stem:[d_1],1,0,0,ham
+stem:[d_2],1,0,1,ham
+stem:[d_3],0,1,0,spam
+stem:[d_4],0,1,1,spam
+stem:[d_5],0,1,1,spam
+stem:[d_6],1,1,1,?
+|===
+
+Let's use Bayesian naive Bayes Classifier to predict the label for the test data point stem:[\mathbf{\tilde{x}}]. Given this test data point, we find stem:[P(t=1 \, | \, \mathbf{\tilde{x}})] and stem:[P(t=0 \, | \, \mathbf{\tilde{x}})], and assign stem:[\mathbf{\tilde{x}}] to the class that has the maximum probability. Ham is considered as class 1 and spam as class 0.
+
+We consider our prior as stem:[\boldsymbol{\pi} \sim \text{Dir}(1, 1)] and stem:[\theta_{jc} \sim \text{Beta}(1, 1)]. Then our Bayesian estimates are:
+
+[stem]
+++++
+\begin{align*}
+\bar{\pi}_c & = \frac{N_c+1}{N+2}  \\
+\bar{\theta}_{jc} & = \frac{N_{jc}+1}{N_c+2}
+\end{align*}
+++++
+
+[stem]
+++++
+\begin{align*}
+P(t=1 \, | \, \mathbf{\tilde{x}}) & = p(x_1,x_2 \, |\, t=1) P(t=1) \\
+& = p(x_1\, |\, t=1) p(x_2\, |\, t=1) p(x_3\, |\, t=1) P(t=1) \\
+& = P(x_1=1\, |\, t=1) P(x_2=1\, |\, t=1) P(x_3=1\, |\, t=1) P(t=1) \\
+& =  \frac{3}{4} \cdot \frac{1}{4} \cdot \frac{2}{4} \cdot \frac{3}{7} = 0.040
+\end{align*}
+++++
+
+[stem]
+++++
+\begin{align*}  
+P(t=0 \, | \, \mathbf{\tilde{x}}) & = p(x_1,x_2 \, |\, t=1) P(t=1) \\
+& = P(x_1=1\, |\, t=0) P(x_2=1\, |\, t=0) P(x_3=1\, |\, t=0) P(t=0) \\
+& =  \frac{1}{5} \cdot \frac{4}{5} \cdot \frac{3}{5} \cdot \frac{4}{7} = 0.054
+\end{align*}
+++++
+
+Since the probability is greater for stem:[t=0], we predict the class as spam. With these priors, the MAP estimates also fail, but with Bayesian estimates, we are able to avoid situations where the classifier breakdowns. Therefore, Bayesian naive Bayes model is more robust, avoids overfitting and gives meaningful predictions compared to the standard naive Bayes classifier with MLE/MAP estimates.
+
+== References ==
+. Kevin P. Murphy Machine Learning: a Probabilistic Perspective, the MIT Press (2012), also see upcoming 2021 editions https://probml.github.io/pml-book/

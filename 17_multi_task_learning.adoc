@@ -1,0 +1,49 @@
+= Multi-task Learning =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Problem Setting ==
+Consider a dataset from a population, which is separated into stem:[K] groups. The data can then be denoted
+
+[stem]
+++++
+{\left\lbrace {\left\lbrace \mathbf{x}_{ik}, y_{ik}\right\rbrace} _{i=1}^{N_k}\right\rbrace} _{k=1}^K
+++++
+
+where stem:[{\left\lbrace \mathbf{x}_{ik}, y_{ik}\right\rbrace}] is the stem:[i]th pair of observations in group stem:[k]. There are stem:[N_k] observations in each group and thus stem:[\sum_{k=1}^K N_k] observations in total. The aim is to learn a set of stem:[K] models, one for each group, related to classification or regression tasks.
+
+In practice, while certain groups might have rich, historical data, others (particularly those recently in operation) will have limited training data. In this setting, learning separate, independent models for each group will lead to unreliable predictions. On the other hand, a single regression (or classification) of all the data will result in poor generalization.
+
+Instead, we can assume that the models are related to one another and can improve them by learning the parameters in a joint inference over the whole population, i.e., we encourage similarity or dependency among parameters across different tasks. In machine learning, this is referred to as multi-task learning.
+
+== Multi-task Learning ==
+In multi-task learning, we learn separate models for each task but introduce a mechanism to encourage shared learning. The idea is that the models should not be completely independent but should share information so that learning from one task benefits the others. There are several ways this can be achieved.
+
+. Through a Shared Prior (Hierarchical Bayesian Perspective):
++
+Suppose we have task-specific parameters stem:[\mathbf{w}_k] for tasks stem:[k=1,\dots,K]. Instead of learning each stem:[\mathbf{w}_k] independently, we assume they come from a common prior with hyperparameter stem:[\eta]. So when given some data for the stem:[k]th task, the posterior of stem:[\mathbf{w}_k] is updated. This updates the posterior over stem:[\eta], which in turn affects the posterior of the other stem:[\mathbf{w}_k]. Thus inducing a statistical correlation among stem:[w_k]'s.
+
+. Through Regularization (Soft Parameter Sharing):
++
+Another approach is to penalize differences between task-specific parameters, enforcing a form of similarity. For example, we can use an stem:[L_2] penalty on the difference between parameters:
++
+[stem]
+++++
+\arg \min_{\mathbf{w}_1, \dots, \mathbf{w}_K} \sum_{k=1}^K L(\mathcal{D}_i, \mathbf{w}_i) + \sum_{i} \sum_j \| \mathbf{w}_i - \mathbf{w}_j \|^2
+++++
++
+Or,
++
+[stem]
+++++
+\arg \min_{\mathbf{w}_1, \dots, \mathbf{w}_K} \sum_{k=1}^K L(\mathcal{D}_i, \mathbf{w}_i) + \sum_{i} \| \mathbf{w}_i - \bar{\mathbf{w}} \|^2
+++++
++
+where stem:[L(\mathcal{D}_i, \mathbf{w}_i)] is the loss associated with the stem:[i]th model. Then the parameters that would have been learned independently are now coupled, making them more similar.
+
+. Through a Shared Representation (Neural Networks):
++
+In deep learning, multi-task learning often uses a shared feature extractor (e.g., a shared first few layers in a neural network). This forces different tasks to learn similar feature representations, creating an implicit correlation between the model parameters across tasks.
