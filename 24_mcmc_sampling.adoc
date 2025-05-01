@@ -1,0 +1,156 @@
+= MCMC Sampling =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+
+== Introduction ==
+Markov chain Monte Carlo (MCMC) is a general and powerful sampling technique which allows sampling from a large class of distributions and which scales well with the dimensionality of the sample space.
+
+In rejection and importance sampling, every sample is sampled from the proposal distribution *independently*. If a particular sample stem:[\mathbf{z}^{(i)}] is accepted, it indicates that the density stem:[p(\mathbf{z}^{(i)})] is high in that region and we should sample more around this region. But we don't do this in these sampling techniques. We try to capture this knowledge in our sampling process in the MCMC techniques.
+
+Here we sample from a proposal distribution, but also maintain a record of the current state stem:[\mathbf{z}^{(m)}], and the proposal distribution stem:[q(\mathbf{z} \, | \, \mathbf{z}^{(m)})] is conditioned on this current state, and so the sequence of samples stem:[\mathbf{z}^{(0)}, \mathbf{z}^{(1)}, \dots ] forms a Markov chain.
+
+In the sampling process, we make the first-order Markov assumption that the next sample that is drawn from the distribution is dependent upon the last sample that was drawn. So the idea of the MCMC techniques is that the samples can be drawn from the desired target distribution by constructing a first-order Markov chain whose stationary distribution is the desired target distribution
+
+====
+MCMC samplers are irreducible and aperiodic Markov chains that have the desired target distribution as the invariant distribution.
+
+====
+
+But how do we construct such a Markov chain?
+
+There are different types of MCMC techniques: Metropolis-Hastings algorithm, Gibbs sampling, Hamiltonian Monte Carlo, and Stochastic Gradient Langevin Dynamics (SGLD). They all differ in the way how they define the transition kernel (construct the chain).
+
+== Metropolis-Hastings ==
+Given an (unnormalized) target distribution stem:[\tilde{p}(\mathbf{z})], a simple proposal distribution stem:[q(\mathbf{z} \, | \, \mathbf{z}^{(m)})], and an initial state stem:[\mathbf{z}^{(0)}], the Metropolis-Hastings (MH) algorithm generates a sequence of samples stem:[\mathbf{z}^{(0)}, \mathbf{z}^{(1)}, \dots, \mathbf{z}^{(M)}] whose distribution, with sufficiently large stem:[M], approximate stem:[\tilde{p}(\mathbf{z})].
+
+A common choice for the proposal distribution is a Gaussian centered on the current state, and the variance of this distribution is a hyperparameter.
+
+* If the variance is set to small, then the proportion of accepted transitions will be high, but progress through the state space will be slow.
+* If the variance is set to large, then the rejection rate will be high because many of the proposed steps will be to states for which the probability stem:[\tilde{p}(\mathbf{z})] is low.
+
+=== Algorithm ===
+Consider the target distribution stem:[p(\mathbf{z}) = \frac{\tilde{p}(\mathbf{z})} {Z_p}], where stem:[\tilde{p}(\mathbf{z})] can readily be evaluated, but stem:[Z_p] is unknown. It is not necessary to know the closed form expression for stem:[\tilde{p}(\mathbf{z})], we should just be able to evaluate it for a given stem:[\mathbf{z}]. Our goal is to obtain samples in accordance with stem:[p(\mathbf{z})].
+
+. Initialize stem:[\mathbf{z}^{(0)}].
+. For stem:[m= 0 \text{ to } M-1]:
+
+.. Construct the proposal distribution as stem:[q(\mathbf{z} \, | \, \mathbf{z}^{(m)})]. Typically it will be stem:[\mathcal{N}(\mathbf{z}^{(m)}, \boldsymbol{\Sigma})]. This can be seen as adding a Gaussian noise to our chosen sample, stem:[\mathbf{z}^{(m)} + \mathcal{N}(\mathbf{0}, \boldsymbol{\Sigma})].
+.. Sample from this proposal distribution stem:[\mathbf{z}^* \sim \mathcal{N}(\mathbf{z}^{(m)}, \boldsymbol{\Sigma})].
+.. Sample from uniform stem:[u \sim U(0,1)].
+.. If 
++
+[stem]
+++++
+\frac{p(\mathbf{z}^*) \, q(\mathbf{z}^{(m)} \, | \, \mathbf{z}^*) }{ p(\mathbf{z}^{(m)}) \, q(\mathbf{z}^* \, | \, \mathbf{z}^{(m)})} > u
+++++
++
+then stem:[\mathbf{z}^{(m+1)} \leftarrow \mathbf{z}^*]. Else, stem:[\mathbf{z}^{(m+1)} \leftarrow \mathbf{z}^{(m)}]. The sample is accepted with a probability
++
+[stem]
+++++
+A( \mathbf{z}^*, \mathbf{z}^{(m)}) = \min \left(1, \frac{p(\mathbf{z}^*) \, q(\mathbf{z}^{(m)} \, | \, \mathbf{z}^*) }{ p(\mathbf{z}^{(m)}) \, q(\mathbf{z}^* \, | \, \mathbf{z}^{(m)})} \right)
+++++
++
+If the proposal distribution is symmetric, i.e., stem:[ q(\mathbf{z}^{(m)} \, | \, \mathbf{z}^*) = q(\mathbf{z}^* \, | \, \mathbf{z}^{(m)})] (moving from stem:[\mathbf{z}^{(m)}] to stem:[\mathbf{z}] is just as likely as moving from stem:[\mathbf{z}] to stem:[\mathbf{z}^{(m)}]), then the acceptance/rejection criteria becomes
++
+[stem]
+++++
+\frac{p(\mathbf{z}^*) }{ p(\mathbf{z}^{(m)})} > u
+++++
++
+Gaussians with fixed covariance matrix are symmetric, stem:[\mathcal{N}(\mathbf{z}; \mathbf{z}^{(m)}, \boldsymbol{\Sigma} ) = \mathcal{N}(\mathbf{z}^{(m)}; \mathbf{z}, \boldsymbol{\Sigma} ) ].
+
+NOTE: We don't have any trouble computing the quantity stem:[\frac{p(\mathbf{z}^*) }{ p(\mathbf{z}^{(m)})}] as it becomes equal to stem:[\frac{\tilde{p}(\mathbf{z}^*) }{ \tilde{p}(\mathbf{z}^{(m)})}]. The denominator term cancels out on taking the ratio as it is independent of stem:[\mathbf{z}].
+
+As we repeat this procedure for stem:[M] times, we will obtain stem:[M] samples. It is stated that as stem:[M] grows large, and with relatively mild restrictions on stem:[p] and stem:[q], the distribution of stem:[\mathbf{z}^{(0)}, \mathbf{z}^{(1)}, \dots] approaches stem:[p(\mathbf{z})]. As we keep sampling, after burn-in period, the samples will be from our desired target distribution stem:[p(\mathbf{z})].
+
+CAUTION: The initial samples won't be from the desired distribution stem:[p(\mathbf{z})], so we reject the initial samples. Typically, we reject around 5000 initial samples.
+
+It is difficult to check if the chain has converged to its invariant distribution or not. To check this, we run multiple chains starting with some arbitrary distribution, and verify the statistics (mean, variance, etc.) of the obtained samples. If the empirical distributions are the same across different chains, then we assume that the chains have converged.
+
+== Convergence ==
+The MH algorithm constructs a Markov chain with transition kernel stem:[T(\mathbf{z}^{(m)}, \mathbf{z}^{(m+1)})], but how does it ensure that stem:[p(\mathbf{z})] is the invariant distribution of that chain? The detailed balance criterion states that a stationary distribution stem:[p(\mathbf{z})] satisfies 
+
+[stem, id='eq_1']
+++++
+\begin{align*}
+p(\mathbf{z}) \, T(\mathbf{z}^{(m+1)}, \mathbf{z}^{(m)}) & = p(\mathbf{z}') \, T(\mathbf{z}^{(m)}, \mathbf{z}^{(m+1)}) \nonumber \\
+p(\mathbf{z}^{(m+1)}) \, K_{MH}(\mathbf{z}^{(m)} \mid \mathbf{z}^{(m+1)}) & = p(\mathbf{z}^{(m)}) \, K_{MH}(\mathbf{z}^{(m+1)} \mid \mathbf{z}^{(m)}) \\
+\end{align*}
+++++
+
+where stem:[\mathbf{z}'] is the previous state and stem:[\mathbf{z}] is the current state.
+
+The transition kernel of the MH sampling sequence defines the likelihood of moving to other state and the likelihood of staying at the same state. Consider two cases:
+
+* Case A: stem:[\mathbf{z}^{(m+1)} \ne \mathbf{z}^{(m)}] (moving to other state): this transition can only be achieved with an accepted MH step. This happens with the probability:
++
+[stem]
+++++
+\begin{align*}
+K_{MH}(\mathbf{z}^{(m+1)} \mid \mathbf{z}^{(m)}) & = A( \mathbf{z}^{(m+1)}, \mathbf{z}^{(m)}) \, q(\mathbf{z}^{(m+1)} \, | \, \mathbf{z}^{(m)}) \\
+& = \text{Prob. of accepting } \mathbf{z}^{(m+1)} \times \text{Prob. of selecting } \mathbf{z}^{(m+1)} \text{ given } \mathbf{z}^{(m)}
+\end{align*}
+++++
++
+That is, the transition happens only when these two events occur.
+
+* Case B: stem:[\mathbf{z}^{(m+1)} = \mathbf{z}^{(m)}] (staying at the same state): this transition can be achieved with an accepted step that luckily lands back at the same point or with a rejected step. This happens with the probability:
++
+[stem]
+++++
+\begin{align*}
+K_{MH}(\mathbf{z}^{(m)} \mid \mathbf{z}^{(m)}) & = A( \mathbf{z}^{(m)}, \mathbf{z}^{(m)}) \, q(\mathbf{z}^{(m)} \, | \, \mathbf{z}^{(m)}) + \int_{\mathbf{z}'} q(\mathbf{z}' \, | \, \mathbf{z}^{(m)}) \, (1- A( \mathbf{z}', \mathbf{z}^{(m)})) \, d\mathbf{z}'
+\end{align*}
+++++
++
+The first term is the probability of luckily being accepted back on the same point, and the second term is the probability of a rejection. Here we have stem:[\mathbf{z}^{(m+1)} = \mathbf{z}^{(m)}], so <<eq_1, Equation 1>> is trivially satisfied.
+
+Now let's return to Case A and expand it:
+
+[stem]
+++++
+\begin{align*}
+K_{MH}(\mathbf{z}^{(m+1)} \mid \mathbf{z}^{(m)}) & = \min \left(1, \frac{p(\mathbf{z}^{(m+1)}) \, q(\mathbf{z}^{(m)} \, | \, \mathbf{z}^{(m+1)}) }{ p(\mathbf{z}^{(m)}) \, q(\mathbf{z}^{(m+1)} \, | \, \mathbf{z}^{(m)})} \right) \, q(\mathbf{z}^{(m+1)} \, | \, \mathbf{z}^{(m)}) \\
+& = \frac{1}{p(\mathbf{z}^{(m)})} \min \left(q(\mathbf{z}^{(m+1)} \, | \, \mathbf{z}^{(m)}) \,\, p(\mathbf{z}^{(m)}) , p(\mathbf{z}^{(m+1)}) \, q(\mathbf{z}^{(m)} \, | \, \mathbf{z}^{(m+1)}) \right)
+
+\end{align*}
+++++
+
+Similarly, we can observe that
+
+[stem]
+++++
+K_{MH}(\mathbf{z}^{(m)} \mid \mathbf{z}^{(m+1)}) = \frac{1}{p(\mathbf{z}^{(m+1)})} \min \left(q(\mathbf{z}^{(m+1)} \, | \, \mathbf{z}^{(m)}) \,\, p(\mathbf{z}^{(m)}) , p(\mathbf{z}^{(m+1)}) \, q(\mathbf{z}^{(m)} \, | \, \mathbf{z}^{(m+1)}) \right)
+++++
+
+So for case A also we have the detailed balance satisfied:
+
+[stem]
+++++
+\begin{align*}
+p(\mathbf{z}^{(m+1)}) \, K_{MH}(\mathbf{z}^{(m)} \mid \mathbf{z}^{(m+1)}) & = p(\mathbf{z}^{(m)}) \, K_{MH}(\mathbf{z}^{(m+1)} \mid \mathbf{z}^{(m)})
+\end{align*}
+++++
+
+Since detailed balance holds for both Case A and Case B, it holds at all subsequent steps (after the burn-in period).
+
+The transition probability defined in the algorithm also ensures that there are no cycles (aperiodicity) and that every state can be reached in a finite number of steps (irreducibility).
+
+* Since the algorithm always allows for rejection, it follows that it is aperiodic.
+* To ensure irreducibility, we simply need to make sure that the support of stem:[q(.)] includes the support of stem:[p(.)]. We define a slightly larger variance for our proposal distribution to ensure that any state can be reached from any state.
+
+Thus, the MH algorithm constructs an aperiodic and irrreducible Markov chain. As all the conditions are satisfied, the chain truely converges to stem:[p(\mathbf{z})].
+
+== References ==
+. https://kkhauser.web.illinois.edu/teaching/notes/MetropolisExplanation.pdf
+
+
+
+
+
+

@@ -47,9 +47,11 @@ p{(\mathbf{w})} & = \frac{1}{\sqrt{(2\pi)^D |\mathbf{S}_0|}} \text{exp} \left( -
 == Posterior Distribution ==
 We compute the posterior over the parameters using Bayes' theorem as
 
-[stem]
+[stem, id='eq_2']
 ++++
-p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) = \frac{p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) \cdot p(\mathbf{w})}{p(\mathcal{T} \, | \, \mathcal{X})}
+\begin{align}
+p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) = \frac{p(\mathcal{T} \, | \, \mathcal{X}, \mathbf{w}) \cdot p(\mathbf{w})}{p(\mathcal{T} \, | \, \mathcal{X})} \\
+\end{align}
 ++++
 
 where stem:[\mathcal{X}] is the set of training inputs and stem:[\mathcal{T}] the collection of corresponding training targets.
@@ -65,12 +67,12 @@ The mode of the posterior is the MAP estimate
 \hat{\mathbf{w}}_{\text{MAP}} = \underset{\mathbf{w}}{\operatorname{argmax }} \text{ } \left( \log (p(\mathbf{w})) + \sum_{i=1}^N \log p(\mathcal{T}| \, \mathcal{X}, \mathbf{w}) \right)
 ++++
 
-In the Bayesian setup, we would like to compute the full posterior distribution. However, in this case, it is not possible to obtain the posterior in a closed form because the functional form of the likelihood and the prior are different. The functional form of the
+In the Bayesian setup, we would like to compute the full posterior distribution. However, in this case, it is not possible to obtain the posterior in a closed form because the functional form of the likelihood and the prior are different. The posterior is not a Gaussian. The functional form of the
 
 * The Likelihood contains the terms such as stem:[\frac{1}{1 + \text{exp}(-\mathbf{w}^\top \boldsymbol{\phi}(\mathbf{x}_n))}], and 
 * The prior contains the term stem:[\frac{1}{\sqrt{(2\pi)^D}} \text{exp} \left( - \frac{\mathbf{w}^\top \mathbf{w}}{2} \right)] (on assuming mean stem:[\mathbf{0}] and identity variance).
 
-The way in which the parameter stem:[\mathbf{w}] appears in both is different. Thus, we cannot compute the posterior in a closed form. The posterior is not a Gaussian.
+The way in which the parameter stem:[\mathbf{w}] appears in both is different. Thus, we cannot compute the posterior in a closed form. The issue majorly arises because of the denominator term in <<eq_2, Equation 2>>. We need to integrate out the parameters from the numerator terms to compute the denominator term. This integration is intractable which prevents us from computing the posterior in a closed form.
 
 Our end objective is to use this posterior distribution over the parameters to get the predictive posterior distribution for the test point stem:[\mathbf{x}^*]:
 

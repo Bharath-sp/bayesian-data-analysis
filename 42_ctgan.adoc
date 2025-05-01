@@ -1,0 +1,289 @@
+= CTGAN =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+Modeling the probability distribution of rows in tabular data and generating realistic synthetic data is a non-trivial task. Tabular data usually contains a mix of discrete and continuous columns. Continuous columns may have multiple modes whereas discrete columns are sometimes imbalanced making the modeling difficult.
+
+To address these challenges, the authors propose Conditional Tabular GAN, a method that introduces several new techniques: augmenting the training procedure with mode-specific normalization, architectural changes, and addressing data imbalance by employing a conditional generator and training-by-sampling.
+
+CTGAN is a GAN-based method to model tabular data distribution and sample rows from the distribution.
+
+== Experimental Setup ==
+The task of synthetic data generation requires training a data synthesizer stem:[G] learnt from a table stem:[\mathbf{T}] and then using stem:[G] to generate a synthetic table stem:[\mathbf{T}_{\text{syn}}]. A table stem:[\mathbf{T}] contains:
+
+* stem:[N_c] continuous columns stem:[\{C_1, \dots, C_{N_c}\}].
+* stem:[N_d] discrete columns stem:[\{D_1, \dots, D_{N_d}\}].
+
+where each column is considered to be a random variable. These random variables follow an unknown joint distribution stem:[\mathbb{P}(C_1, \dots, C_{N_c}, D_1, \dots, D_{N_d})]. One row
+
+[stem]
+++++
+\mathbf{r}_j = \{c_{1,j}, \dots, c_{N_c,j}, d_{1,j}, \dots, d_{N_d, j}\}, \,\, j \in \{1,\dots, n\}
+++++
+
+is one observation from the joint distribution. stem:[\mathbf{T}] is partitioned into training set stem:[\mathbf{T}_{\text{train}}] and test set stem:[\mathbf{T}_{\text{test}}]. The data synthesizer stem:[G] is trained on stem:[\mathbf{T}_{\text{train}}].
+
+The efficacy of a generator is evaluated along 2 axes:
+
+. Likelihood fitness: Do columns in stem:[\mathbf{T}_{\text{syn}}] follow the same joint distribution as stem:[\mathbf{T}_{\text{train}}]?
+
+. Machine learning efficacy: When training a classifier or a regressor to predict one column using other columns as features, can such classifier or regressor learned from stem:[\mathbf{T}_{\text{syn}}] achieve a similar performance on stem:[\mathbf{T}_{\text{test}}], as a model learned on stem:[\mathbf{T}_{\text{train}}]?
+
+== Unique Properties of Tabular Data ==
+
+* *Mixed data types*: Real-world tabular data consists of mixed types. To simultaneously generate a mix of discrete and continuous columns, GANs must apply both softmax and tanh on the output.
+
+* *Non-Gaussian distributions*: Continuous values in tabular data are usually non-Gaussian where min-max transformation will lead to vanishing gradient problem.
+
+* *Multimodal distributions*: Continuous columns have multiple modes. GANs struggle in modeling the multimodal distribution of continuous columns.
+
+* *Learning from sparse one-hot-encoded vectors*: When generating synthetic samples, a generative model is trained to generate a probability distribution over all categories using softmax, while the real data is represented in one-hot vector. This is problematic when these both are fed to the discriminator because a trivial discriminator can simply distinguish real and fake data by checking the distribution's sparseness instead of considering the overall realness of a row.
+
+* *Highly imbalanced categorical columns:* Categorical columns can be highly imbalanced in which the major category can appear in more than 90% of the rows. This creates severe mode collapse in GANs. This leads to insufficient synthetic data generation for minor classes.
+
+== Notations ==
+
+* stem:[\mathbf{x}_1 \oplus \mathbf{x}_2 \oplus \dots]: Concatenate vectors stem:[\mathbf{x}_1, \mathbf{x}_2, \dots].
+* stem:[\text{gumbel}_{\tau}(\mathbf{x})]: apply Gumbel softmax with parameter stem:[\tau] on a vetor stem:[\mathbf{x}].
+* stem:[\text{leaky}_{\gamma}(\mathbf{x})]: apply a leaky ReLU activation on stem:[\mathbf{x}] with leaky ratio stem:[\gamma].
+* stem:[\text{FC}_{u \to v}(\mathbf{x})]: apply a linear transformation on a stem:[u-] dim input to get a stem:[v-] dim output.
+
+We also use `tanh`, `ReLU`, `softmax`, `BN` for batch normalization, and `drop` for dropout.
+
+== Data Preprocessing ==
+
+*Mode-specific Normalization:*
+
+Mode-specific normalization is employed to overcome the non-Gaussian and multimodal distribution challenges of the continuous columns. In this method, each column is processed independently. Each value is represented as a one-hot vector indicating the mode, and a scalar indicating the value within the mode. The method contains three steps:
+
+. For each continuous column stem:[C_i], use variational Gaussian mixture model (VGM) to estimate the number of modes stem:[m_i] and fit a Gaussian mixture. For instance, the VGM finds three modes (stem:[m_i=3]), namely stem:[\eta_1, \eta_2, \eta_3]. The learned Gaussian mixture is stem:[\mathbb{P}(c_{i,j}) = \sum_{k=1}^3 \pi_k \, \mathcal{N}(c_{i,j}; \eta_k, \phi_k)] where stem:[\pi_k] and stem:[\phi_k] are the weight and standard deviation of the stem:[k]th mode.
+
+. For each value stem:[c_{i,j}] in stem:[C_i], compute the probability of stem:[c_{i,j}] coming from each mode. For instance in the figure, for a chosen point stem:[c_{i,j}], the probability densities are stem:[\rho_1, \rho_2, \rho_3]. The probability densities are
+computed as stem:[\rho_k = \pi_k \, \mathcal{N}(c_{i,j}; \eta_k, \phi_k)].
++
+In this case, one scalar value stem:[c_{i,j}] will be mapped to three probability densities as we have three modes.
+
+. Sample one mode from given the probability density, and use the sampled mode to normalize the value. For example, say for stem:[c_{i,j}], we pick the third mode stem:[\rho_3]. Then, we represent stem:[c_{i,j}] as a one-hot vector stem:[\boldsymbol{\beta}_{i,j} = [0,0,1\]] indicating the third mode, and a scalar
++
+[stem]
+++++
+\alpha_{i,j} = \frac{c_{i,j} - \eta_3}{4\phi_3}
+++++
++
+to represent the value within the mode. As a result, each stem:[c_{i,j}] in column stem:[C_i] is mapped to a vector of 4 components.
+
+image::.\images\ctgan_01.png[align='center', 600, 400]
+
+The dotted blue is the real distribution of the values in column stem:[C_i].
+
+Discrete columns are represented as one-hot vectors. Thus, the representation of a row become the concatenation of continuous and discrete columns
+
+[stem]
+++++
+\mathbf{r}_j = \alpha_{1,j} \oplus \boldsymbol{\beta}_{1,j} \oplus \dots \oplus \alpha_{N_c,j} \oplus \boldsymbol{\beta}_{N_c,j} \oplus \mathbf{d}_{1,j} \oplus \dots \oplus \mathbf{d}_{N_d,j}
+++++
+
+where stem:[\mathbf{d}_{i,j}] is the one-hot representation vector of a discrete value of the stem:[i]th column in row stem:[j].
+
+CAUTION: Classical GMMs require the number of components (i.e., the number of Gaussians) to be pre-specified. Moreover, maximum likelihood estimation (used in classical GMMs) can overfit to small datasets.
+
+=== Code Implementation ===
+A `DataTransformer` is instantiated. And it is fit to the raw data.
+
+[source,python]
+----
+preprocess_transformer = DataTransformer()
+preprocess_transformer.fit(raw_df, discrete_columns)
+----
+
+This fits a `ClusterBasedNormalizer` for continuous columns and a `OneHotEncoder` for discrete columns. Suppose our dataset has 12 columns (7 numerical columns and 5 discrete columns).
+
+[source,python]
+----
+for column_info in preprocess_transformer._column_transform_info_list:
+  print(column_info)
+----
+
+This gives us the transformation applied to each column and the information about the activation function to be used. For example
+
+[source,python]
+----
+ColumnTransformInfo(column_name='person_age', column_type='continuous', transform=ClusterBasedNormalizer(missing_value_generation='from_column'), output_info=[SpanInfo(dim=1, activation_fn='tanh'), SpanInfo(dim=np.int64(9), activation_fn='softmax')], output_dimensions=np.int64(10))
+
+ColumnTransformInfo(column_name='person_home_ownership', column_type='discrete', transform=OneHotEncoder(), output_info=[SpanInfo(dim=4, activation_fn='softmax')], output_dimensions=4)
+----
+
+* The column `person_age` is a numerical column, so mode-specific normalization transformation is applied. The VGM has fit 9 Gaussian components to this variable. This results in one scalar value (the normalized numerical value) and one discrete variable to indicate the Gaussian component. The discrete column is one-hot encoded. The normalized numerical column has values within [-1,1] with 99.99% probability. The column `person_age` is transformed to 10 columns. In the output layer of NN, the numerical column is passed through tanh activation function and the one-hot encoded columns are passed through softmax activation.
+
+* The column `person_home_ownership` is a discrete column, so one-hot encoder transformation is applied. This particular column has 4 categories, so it is transformed to 4 binary columns. The columns are passed through softmax activation in the output layer of NN.
+
+In our example, the 12 columns in the data are transformed to 91 in total. So the transformed data size is stem:[(\text{rows in the data}, 91)].
+
+== Conditional Vector and Training-by-Sampling ==
+Conditional generator and training-by-sampling are employed to deal with the imbalanced discrete columns. The goal is to resample efficiently in a way that all the categories from discrete attributes are sampled evenly (but not necessary uniformly) during the training process, and to recover the real data distribution (not-resampled) during test.
+
+Our data has stem:[D_1, \dots, D_{N_d}] discrete columns. Let stem:[k^*] be the value from the stem:[i]th discrete column stem:[D_{i^*}].
+
+*Conditional vector:*
+
+We introduce the vector `cond` as the way for indicating the condition stem:[D_{i^*} = k^*]. For any row stem:[j], recall that all the discrete columns stem:[D_1, \dots, D_{N_d}] end up us one-hot vectors stem:[\mathbf{d}_1, \dots, \mathbf{d}_{N_d}] such that
+the stem:[i]th one-hot vector is stem:[\mathbf{d}_i = [\mathbf{d}_i^{(k)}\]], for stem:[k=1, \dots, |D_i|], where stem:[|D_i|] is the number of categories in the stem:[i]th discrete column.
+
+Let stem:[\mathbf{m}_i = [\mathbf{m}_i^{(k)}\]], for stem:[k=1, \dots, |D_i|] be the stem:[i]th mask vector associated to the stem:[i]th one-hot vector stem:[\mathbf{d}_i]. The condition is expressed in terms of these mask vectors as:
+
+[stem]
+++++
+\mathbf{m}_i^{(k)} = \begin{cases}
+        1 & \text{if } i=i^* \text{ and } k=k^*, \\
+        0 & \text{otherwise}.
+    \end{cases}
+++++
+
+Then, define the vector stem:[\text{cond} = \mathbf{m}_1 \oplus \dots \oplus \mathbf{m}_{N_d}]. For instance, for two discrete columns, stem:[D_1 = \{1,2,3\}] and stem:[D_2 = \{1,2\}], the condition (stem:[D_2 = 1]) is expressed by the mask vectors stem:[\mathbf{m}_1 = [0,0,0\]] and stem:[\mathbf{m}_2 = [1,0\]]; so stem:[\text{cond} = [0,0,0,1,0\]].
+
+=== Code Implementation ===
+A nested list `rid_by_cat_cols`, which represents the row index by category column, is created. This list has as many distinct categories as we have in all the discrete columns combined. The dataset we considered have 5 discrete column, and 21 distinct categories.
+
+[source, python]
+----
+[[array([    0,     3,     4, ..., 32575, 32578, 32580], dtype=int64),
+  array([    1,     5,     9, ..., 32550, 32568, 32572], dtype=int64), ... ]]
+----
+
+Doing rid_by_cat_cols[i][k] gives us a list of all rows with the stem:[D_i]-th discrete column equal value stem:[k].
+
+A matrix `discrete_column_category_prob` is created. The shape of this matrix is (number of discrete columns present in the data, the maximum of number of categories a discrete column has). In our data, we have a column with 7 distinct categories which is the maximum. So, the matrix shape is stem:[(5,7)].
+
+[stem]
+++++
+\begin{align*}
+\begin{bmatrix}
+0.50 & 0.07 & 0.41 & 0.01 & 0. & 0. & 0. \\ 
+0.17 & 0.20 & 0.19 & 0.17 & 0.11 & 0.16 & 0. \\ 
+0.11 & 0.32 & 0.19 & 0.33 & 0.03 & 0.01 & 0.01 \\
+0.17 & 0.83 & 0. & 0. & 0. & 0. & 0. \\
+0.12 & 0.19 & 0.20 & 0.21 & 0.11 & 0.14 & 0. 
+\end{bmatrix}
+\end{align*}
+++++
+
+Each row in this matrix defines the PMF of each discrete variable. The probability mass of each value is the logarithm of its frequency in that column. We shall also calculate the CDF:
+
+[stem]
+++++
+\begin{align*}
+\begin{bmatrix}
+0.50 & 0.57 & 0.98 & 0.99 & 1.0 & 0. & 0. \\ 
+0.17 & 0.37 & 0.56 & 0.73 & 0.84 & 1.0 & 0. \\ 
+0.11 & 0.43 & 0.62 & 0.95 & 0.98 & 0.99 & 1.0 \\
+0.17 & 1.0 & 1.0 & 1.0 & 1.0 & 1.0 & 1.0 \\
+0.12 & 0.32 & 0.53 & 0.75 & 0.86 & 1.0 & 1.0 
+\end{bmatrix}
+\end{align*}
+++++
+
+Suppose the `batch_size` is 500. Then, we need to sample 500 conditional vector.
+
+. Select 10 discrete columns (with replacement) at random. All columns are equally likely. Say, we selected in this order stem:[\text{discrete_column_id} = [1,4,1, \dots, 2\]].
+. Get the CDF associated with each column to get a stem:[\text{cdf_matrix} = (\text{batch size}, \text{max categories}) = (100,7)] matrix.
+. Sample from the uniform distribution of size stem:[\mathbf{u} = (\text{batch size},) = (100,)].
+. Do stem:[\text{cdf_matrix} > \mathbf{u}]. For each row of the matrix, the first category that satisfies this condition is chosen (the typical way of sampling from a discrete distribution). We get a vector of size 100 where each value represents the category chosen. For example, stem:[\text{category_id_in_col} = [1,5,1,\dots, 3]].
+. Create a mask matrix of size stem:[\text{mask} = (\text{batch size}, \text{num of discrete columns}) = (100,5)]. Each row is a one-hot vector indicating the selected discrete column.
+. Create a cond matrix of size stem:[\text{cond} = (\text{batch size}, \text{total num of categories}) = (100,21)]. Each row (a cond vector) is a one-hot vector indicating the selected category.
+
+== Network Architecture ==
+The fully-connected networks are used in generator and critic (discriminator) to capture all possible correlations between columns. Specifically, the authors proposed two fully-connected hidden layers in both generator and critic.
+
+=== The Conditional Generator ===
+The conditional generator stem:[G] can be formally described as:
+
+image::.\images\ctgan_generator_01.png[align='center', 500, 400]
+
+After two hidden layers, the synthetic row representation is generated using a mix activation functions. The scalar values stem:[\hat{\alpha}_i] is generated by tanh, while the mode indicator stem:[\hat{\beta}_i] and discrete values stem:[\hat{\mathbf{d}}_i] is generated by gumbel softmax.
+
+image::.\images\ctgan_generator_02.png[align='center', 800, 600]
+
+The output of the generator is of the size stem:[(\text{batch size}, 91)]. Each row corresponds to a generated sample stem:[\hat{\mathbf{r}}_j]. Here the generator models the conditional distribution stem:[\mathbb{P}_g(\text{row} \mid D_{i^*} = k^*)]. For this reason, in this paper the authors named it Conditional generator, and a GAN built upon it is referred to as Conditional GAN.
+
+For our example, the generator configuration is:
+
+image::.\images\ctgan_generator_03.png[align='left', 600, 400]
+
+=== The Critic ===
+The output produced by the conditional generator must be assessed by the critic, which estimates the distance between the learned conditional distribution stem:[\mathbb{P}_g(\mathbf{r} \mid \text{cond})] and the conditional distribution on real data stem:[\mathbb{P}_r(\mathbf{r} \mid \text{cond})].
+
+In the previous section, for a given condition (through `cond` vector), we saw the generation process of fake data stem:[\hat{\mathbf{r}}]. For the same condition, we also need to sample from the real datat to get stem:[\mathbf{r}]. Then, these two can be fed to the critic for training.
+
+*Sampling from the real data:*
+
+. We have two vectors created stem:[\text{discrete_column_id}] and stem:[\text{category_id_in_col}] which represents the discrete columns and category selected respectively.
+. We also have `rid_by_cat_cols` created which represents the row index by category column.
+. Doing rid_by_cat_cols[i][k] gives us a list of all rows with the stem:[D_i]-th discrete column equal value stem:[k].
+. We pass each element of stem:[\text{discrete_column_id}] and stem:[\text{category_id_in_col}] to `rid_by_cat_cols` and select a random row index (if there are many rows satifying the given condition).
++
+[source, python]
+----
+idx = []
+for c, o in zip(discrete_column_id, category_id_in_col):
+    idx.append(np.random.choice(self._rid_by_cat_cols[c][o]))
+
+return data[idx]
+----
+
+Now we have two datasets `real` and `fake`, each of size stem:[(\text{batch size}, 91)]. We concatenate respective cond matrix to these datasets to get each of size stem:[(\text{batch size}, 112)]. These two datasets are passed to the critic.
+
+*Critic Architecture:*
+
+The authors used the PacGAN framework with 10 samples in each pac to prevent mode collapse. The architecture of the critic (with pac size 10) can be formally described as:
+
+image::.\images\ctgan_critic_01.png[align='center', 400, 300]
+
+For our example, the critic configuration is:
+
+image::.\images\ctgan_critic_02.png[align='left', 500, 400]
+
+== Training Loss ==
+The authors used WGAN loss with gradient penalty. The objective of Wasserstein GAN with gradient penalty is
+
+[stem]
+++++
+\min_G \max_D \left[ \mathbb{E}_{\mathbf{x} \sim p_r}\left[D\left(\mathbf{x}\right)\right] -
+
+\mathbb{E}_{\mathbf{z} \sim p_{g}}\left[D\left(G(\mathbf{z})\right)\right]
+
+- \lambda\mathbb{E}_{\mathbf{\hat{x}} \sim p_{\hat{\mathbf{x}}}} \left[\left(||\nabla_{\hat{\mathbf{x}}}D\left(\mathbf{\hat{x}}\right)||_{2}-1\right)^{2}\right] \right]
+++++
+
+where stem:[\hat{\mathbf{x}}] is a random point sampled uniformly along straight lines between real and generated samples, stem:[\hat{\mathbf{x}} = \epsilon \mathbf{x} + (1-\epsilon) G(\mathbf{z})] with stem:[\epsilon \sim \mathcal{U}(0,1)]. WGAN-GP penalizes the model if the gradient norm moves away from its target norm value 1.
+
+*Critic (Discriminator) Loss with Gradient Penalty:*
+
+[stem]
+++++
+L_D = \mathbb{E}_{\mathbf{z} \sim p_{g}}\left[D\left(G(\mathbf{z})\right)\right] - \mathbb{E}_{\mathbf{x} \sim p_r}\left[D\left(\mathbf{x}\right)\right] + \lambda\mathbb{E}_{\mathbf{\hat{x}} \sim p_{\hat{\mathbf{x}}}} \left[\left(||\nabla_{\hat{\mathbf{x}}}D\left(\mathbf{\hat{x}}\right)||_{2}-1\right)^{2}\right]
+++++
+
+This loss:
+
+* Encourages the critic to assign higher scores to real samples than generated ones.
+
+* Penalizes deviations of the gradient norm from 1 at interpolated points, enforcing the Lipschitz condition.
+
+*Generator Loss:*
+
+[stem]
+++++
+L_G = - \mathbb{E}_{\mathbf{z} \sim p_{g}}\left[D\left(G(\mathbf{z})\right)\right]
+++++
+
+The generator tries to increase the critic's output for generated samples.
+
+
+
+
+
+
+

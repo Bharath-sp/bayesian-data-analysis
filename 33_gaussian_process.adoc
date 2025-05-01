@@ -1,0 +1,14 @@
+= Gaussian Process =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== A Function-space view ==
+Consider a simple linear model, stem:[f(x=w_0 + w_1 x)], and let's say we put a standard normal distribution over stem:[w_0] and stem:[w_1]. That is stem:[w_0, w_1 \sim \mathcal{N}(0,1)]. This will induce a distribution over functions because each choice of stem:[w_0] and stem:[w_1] corresponds to a function.
+
+image::.\images\bayesian_dl_01.png[align='center', 300, 300]
+
+The blue line shows the expectation of this distribution over functions.
+
+The key distinguishing property of a Bayesian approach is marginalization instead of optimization. Rather than use a single setting of parameters stem:[\mathbf{w}], we use all settings weighted by their posterior probabilities.

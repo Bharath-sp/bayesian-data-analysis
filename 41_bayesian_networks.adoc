@@ -1,0 +1,103 @@
+= Bayesian Networks =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+How can we change our beliefs in the face of new information?
+
+== Introduction ==
+The general idea of knowledge representation language is to explain how the world dynamics work to a machine. One way to do is through the language of logic. Like we have the language of logic in the deterministic environments, we have the language of Bayesian networks in the world of probabilistic environment.
+
+*Burglars and Earthquakes:*
+
+Pearl lives in Los Angeles. It is a high-crime area. Pearl installed a burglar alarm. He asked his neighbors John and Mary to call him if they hear the alarm. Los Angeles is also earth-quake prone. Alarm goes off when there is an earth-quake.
+
+The question we want to answer is: Is your home being burglarized? We cannot answer this question deterministically. There are many things that are in play here:
+
+. A burglar can set off the alarm.
+. The earthquake can also set off the alarm.
+. An alarm can cause Mary to call. The alarm can also cause John to call.
+
+If we are using the world of logic, we would say:
+
+* Burglary stem:[\implies] alarm
+* Earth-quake stem:[\implies] alarm
+* Alarm stem:[\implies] John-calls
+* Alarm stem:[\implies] Mary-calls
+
+We ask the question: If there is a burglary, will Mary call? The answer is yes. If Mary didn't call, is it possible that Burglary occurred? By the logics defined, we answer that it is not possible. In our logics, we didn't even represent the possibility that John calls and Mary doesn't. In this logical way of looking at things, this state is just impossible. In the real world, many other things can also happen:
+
+. The burglars can sometimes disable the alarm.
+. Some earthquakes may be too slight to cause alarm.
+. In Los Angeles, burglaries are more likely than earthquakes.
+. John and Mary both have their own lives and may not always call when the alarm goes off.
+. John and Mary may call even without alarm going off.
+
+One way to answer the question "Is your home being burglarized?" is to enumerate all the possible scenarios and model everything. We model each scenario as a logical binary variable. For example, we model the conditions under which John calls as:
+
+[stem]
+++++
+A \, \& \, C1 \, \& \, C2 \, \& \, C3 \, \& \, \dots \, \& C_N \implies J 
+++++
+
+where stem:[A] alarm goes off, C1 - John is not listening to loud music, C2 - John hasn't gone out, etc. If all these conditions are satisfied, then John calls. But in reality, we can never enumerate all the possible scenarios. This is known as a *qualification problem*, which states that one particular event may have many causes, it is impossible to enumerate all them.
+
+On the other hand, the *ramification problem* is that one particular event may have many effects and it is impossible to enumerate all them. These two problems make the logic system model an infeasible enterprise. It will be very difficult for us to explain all the possible scenarios to the logical system. There is no notion of likelihood in the world of logic.
+
+== Probabilistic Modelling ==
+As an alternative, we can put all these possible scenarios where John doesn't call into one scenario. And say these scenarios can happen 15% of the time. So we say that John doesn't call (irrespective of the reason) 15% of the time. We don't care about enumerating the reasons. Thus, we also say that when there is an alarm, 85% of the time John calls. Here we model the likelihood.
+
+Bayesian networks serve as a knowledge representational language in probabilistic modelling. Bayesian Networks are a specific type of Probabilistic Graphical Model (PGM) that use directed acyclic graphs (DAGs) to represent probabilistic relationships between variables, focusing on *conditional dependencies* and potential causal relationships.
+
+If we know the joint distribution of the random variables involved in the problem, we have complete information about the probabilistic model. For any stem:[n] random variables, if we have the joint distribution stem:[p(x_1, \dots, x_n)], we can compute every query.  But it is not possible to compute the joint distribution in most cases. A joint distribution over all these variables require exponential space for representation and inference. Bayesian networks help us make it compact to compute the joint distribution with less number of parameters.
+
+== Bayesian Networks Syntax ==
+
+* A set of nodes, one per random variable.
+* A directed, acyclic graph (a link or an edge means "directly influences"). 
+* With each node, we associate a conditional probability table (CPT). This CPT would be distribution for each node given its parents, stem:[P(X_i \, | \, \text{Parent}(X_i))]. This represent the probability of stem:[X_i] given all the parents of stem:[X_i]. For discrete random variables, the CPT is a distribution over stem:[X_i] for each combination of parents value.
+
+If we were to represent the burglar-earthquake problem in a graph structure, it will be
+
+image::.\images\bayes_nets_02.png[align='center', 300, 300]
+
+For the given problem, this is not the only graph structure. If we do this in a different order, we can come up with a different graph.
+Say we have these four variables: Weather, cavity, toothache, catch. If we were to represent all these variables in a graph structure, it would be:
+
+image::.\images\bayes_nets_01.png[align='center', 300, 300]
+
+This means:
+
+* Weather is independent of the other variables.
+* Cavity is the cause of multiple effects. Toothache and catch are conditionally independent of each other given cavity.
+
+An inference is the task of how we change a random variables' belief (PMF or PDF) in a probabilistic model when we see observations or other random variables, i.e., updating belief about a random variable (or multiple) based on conditional knowledge regarding another variable (or multiple) in a probabilistic model.
+
+*Example:*
+
+At birth, girl elephant weights are distributed as a Gaussian with mean 160 kg and std 7 kg. At birth, boy elephant weights are distributed as a Gaussian with mean 165 kg and std 3 kg. All we know about a newborn elephant is that it is 163 kg. What is the probability that it is a girl?
+
+Here we look at the weight of an elephant and infer an updated belief about the gender of the elephant. Here we are asked stem:[P(G=1 \, | \, X = 163)].
+
+[stem]
+++++
+P(G=1 \, | \, X = 163) = \frac{f(G=1, X=163)}{P(X=163)} = \frac{f(X=163 \, | \, G=1) \, P(G=1)}{f(X=163 \, | \, G=1) \, P(G=1) + f(X=163 \, | \, G=0) \, P(G=0)}
+++++
+
+image::.\images\bernoulli_inference.png[align='center', 300, 300]
+
+This is a simple model where we assume that the gender of an elephant is changing the distribution of their weights. Here we are inferring a Bernoulli. It could only take on two values. So we only have to do one Bayes' theorem to update our belief.
+
+== Bayesian Network ==
+One of the most important ways of expressing a probabilistic model is through a Bayesian Network. The Bayesian Network helps us express complicated probabilistic models of many random variables.
+
+Given the values of some random variables, what are the conditional distributions of some other random variables? Suppose we have these stem:[N=9] (binary) random variables in our data. We can make a lot of inference questions. For example, what is the probability that a patient has flu given that the patient is nauseous and tired, stem:[P(F=1 \, | \, N=1, T=1)]? We can form a bunch of such inference questions.
+
+But if we knew the joint distribution, we can answer all these inference questions.
+
+image::.\images\bayes_network_01.png[align='center', 600, 400]
+
+If we try to represent this joint as a table, the table should have stem:[2^N] entries. The number of entries is exponentially large. So we cannot solve this inferene task with a joint probability table, we need a more sophisticated language for talking about how random variables can be random together.
+
+Instead of giving the complete joint, we can leverage hypotheses about how the world works to come up with a structure where we can express the joint with fewer probabilities.

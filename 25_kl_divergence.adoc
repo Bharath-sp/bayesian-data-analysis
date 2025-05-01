@@ -1,0 +1,126 @@
+= KL Divergence =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+
+== What is KL Divergence? ==
+For a given random variable, KL divergence quantifies the difference between two probability distributions. This measure of difference is required when doing variation inference or when we want to represent a sophisticated distribution using a simpler distribution.
+
+Let stem:[X] be a random variable. And let stem:[p_{\boldsymbol{\theta}}] and stem:[q_{\boldsymbol{\phi}}] be probability distributions, defined on the same sample space stem:[\mathcal{X}], that we would like to compare.
+
+* stem:[p] is the true target distribution and stem:[\boldsymbol{\theta}] are its parameters.
+* stem:[q] is the approximate distribution and stem:[\boldsymbol{\phi}] are its parameters.
+
+NOTE: KL divergence doesn't require that stem:[p] and stem:[q] are of the same type of distribution. For example, stem:[p] could be the student distribution with three parameters and stem:[q] could be the normal distribution with two parameters.
+
+For a given realization stem:[\mathbf{x}_i] of random variable stem:[X], we have stem:[p_{\boldsymbol{\theta}}(\mathbf{x}_i)] and stem:[q_{\boldsymbol{\phi}}(\mathbf{x}_i)]. Most of the times, these probabilities or likelihoods will be small numbers which will get multiplied by other small numbers and that may result into rounding to 0. So we generally compute log likelihood.
+
+One way to understand how similar two entities are is by simply computing the difference stem:[\log p_{\boldsymbol{\theta}}(\mathbf{x}_i) - \log q_{\boldsymbol{\phi}}(\mathbf{x}_i)]. This can also be written as 
+
+[stem]
+++++
+\log \left[ \frac{p_{\boldsymbol{\theta}}(\mathbf{x}_i)}{q_{\boldsymbol{\phi}}(\mathbf{x}_i)} \right]
+++++
+
+This term is known as log likelihood ratio. This gives us a measure of dissimilarity for one observation. But we are interested in the average difference between two probability distributions. As they are probability distributions, we use expectation instead of average.
+
+[stem]
+++++
+\mathbb{E} \left[ \log \left[ \frac{p_{\boldsymbol{\theta}}(X)}{q_{\boldsymbol{\phi}}(X)} \right] \right]
+++++
+
+We know that the expectation of a function of a random variable is given by
+
+[stem]
+++++
+\mathbb{E}_{p}[f(X)] = \sum_{\mathbf{x} \in \mathcal{X}} f(\mathbf{x}) \, p(\mathbf{x}) \text{ or } \int_{\mathcal{X}} h(\mathbf{x}) \, p(\mathbf{x}) \, d\mathbf{x}
+++++
+
+where stem:[k] denotes the possible outcomes of stem:[X] and the integral is over the support of stem:[X].
+
+The log likelihood ratio can be seen as a function of random variable stem:[X] with respect to the distribution stem:[p]: 
+
+[stem]
+++++
+\mathbb{E}_p \left[ \log \left[ \frac{p(X)}{q(X)} \right] \right] =
+\sum_{\mathbf{x} \in \mathcal{X}}  p(\mathbf{x}) \log \left[ \frac{p(\mathbf{x})}{q(\mathbf{x})} \right] \text{ or } \int_{\mathcal{X}} p(\mathbf{x}) \log \left[ \frac{p(\mathbf{x})}{q(\mathbf{x})} \right] \, d\mathbf{x}
+++++
+
+This expected value of log likelihood ratio is known as the KL divergence from stem:[p] to stem:[q], and denoted as stem:[D_{KL} (p \| q)]. This emphasizes that we are measuring how well stem:[q] approximates stem:[p], i.e., the expected information lost when using stem:[q] instead of stem:[p]. This is also known as forward KL. Note that the expectation is under the true distribution stem:[p].
+
+Conversely, we can compute the difference between the distributions as stem:[\log q_{\boldsymbol{\phi}}(\mathbf{x}_i) - \log p_{\boldsymbol{\theta}}(\mathbf{x}_i)]. This leads us to have the log likelihood ratio as
+
+[stem]
+++++
+\log \left[ \frac{q_{\boldsymbol{\phi}}(\mathbf{x}_i)}{p_{\boldsymbol{\theta}}(\mathbf{x}_i)} \right]
+++++
+
+Then the expectation with respect to distribution stem:[q] is given by
+
+[stem]
+++++
+\mathbb{E}_q \left[ \log \left[ \frac{q(X)}{p(X)} \right] \right] =
+\sum_{\mathbf{x} \in \mathcal{X}}  q(\mathbf{x}) \log \left[ \frac{q(\mathbf{x})}{p(\mathbf{x})} \right] \text{ or } \int_{\mathcal{X}} q(\mathbf{x}) \log \left[ \frac{q(\mathbf{x})}{p(\mathbf{x})} \right] \, d\mathbf{x} \\
+++++
+
+This is the KL divergence from stem:[q] to stem:[p], and denoted as stem:[D_{KL} (q \| p)]. This emphasizes how stem:[q] differs from stem:[p]. This is known as reverse KL.
+
+CAUTION: The direction matters, i.e., the KL divergence is not symmetric: stem:[D_{KL} (p \| q) \ne D_{KL} (q \| p)]. As KL divergence is an asymmetric measure, it is not called as `distance`.
+
+These two KL divergences give different measures of similarity. So how to decide which one to use?
+
+== How to Compute it? ==
+Computing the KL divergence between two distributions in practice depends on whether the distributions are:
+
+. Known analytically (parametric forms), or
+. Available through samples (empirical distributions).
+
+If both stem:[p] and stem:[q] are known distributions (e.g., Gaussians, Bernoulli, etc.), and have parametric forms, KL divergence may have a closed-form expression. For example, if stem:[p = (\mathcal{\mu_p, \sigma_p^2})] and stem:[q = (\mathcal{\mu_q, \sigma_q^2})]. Then
+
+[stem]
+++++
+D_{KL} (p \| q) = \log \frac{\sigma_q}{\sigma_p} + \frac{\sigma_p^2 + (\mu_p - \mu_q)^2}{2\sigma_q^2} - \frac{1}{2}
+++++
+
+But often we only have samples available. So we have to resort to some approximation.
+
+=== Use of Forward KL ===
+Most often we only have samples from the true distribution stem:[p]. This gives us observed empirical distribution, and it can be noisy. We would like to model this observed distribution using some well-known distribution. And suppose we can evaluate both stem:[p(\mathbf{x})] and stem:[q(\mathbf{x})] up to normalization constants. In such cases, we resort to Monte Carlo estimation to compute an approximate KL divergence. Say we have samples stem:[\mathbf{x}^{(1)}, \dots, \mathbf{x}^{(n)} \sim p], then
+
+[stem]
+++++
+\begin{align*}
+D_{KL} (p \| q) \approx \frac{1}{n} \sum_{i=1}^n \log \left[ \frac{p(\mathbf{x}^{(i)})}{q(\mathbf{x}^{(i)})} \right]
+\end{align*}
+++++
+
+Here we use forward KL and the samples are from the true distribution stem:[p]. 
+
+Minimizing stem:[D_{KL} (p \| q)] aims to find an approximate distribution stem:[q] that has support wherever the true distribution stem:[p] has support. In other words, stem:[q] tries to cover all the modes of stem:[p]. It penalizes stem:[q] for having zero probability where stem:[p] has a high probability. If stem:[q(\mathbf{x}) = 0 ] when stem:[p(\mathbf{x}) > 0], the forward KL divergence becomes infinite.
+
+It does not strongly penalize stem:[q] for having probability mass where stem:[p] has little or no mass. Therefore, we end up with a stem:[q] that is broader than stem:[p]. It exhibits mean seeling behaviour. The forward KL divergence is typically used in Expectation Propagation. 
+
+=== Use of Backward KL ===
+Sometimes we have samples only from the approximate distribution stem:[q]. In such case, it is easier to estimate expectations under stem:[q] which are useful for minimizing the reverse KL.
+
+Minimizing stem:[D_{KL} (q \| p)] aims to find an approximate distribution stem:[q] that places its probability mass where the true distribution stem:[p] has high probability. stem:[q] tends to focus on the modes of stem:[p]. It strongly penalizes stem:[q] for having probability mass where stem:[p] has little or no mass. If stem:[q(\mathbf{x}) > 0] when stem:[p(\mathbf{x}) = 0], the KL divergence can be large.
+
+It does not penalize stem:[q] for missing modes of stem:[p]. stem:[q] might only capture one of several modes in stem:[p]. Thus, it exhibits mode seeking behaviour. The backward KL divergence is typically used in variation inference.
+
+== Jensen-Shannon divergence ==
+The KL divergence is not a metric, it is a measure. That is, stem:[D_{KL} (p \| q) \ne D_{KL} (q \| p)]. The Jensen-Shannon divergence (JSD) is a symmetrized and smoothed version of the KL divergence stem:[D_{KL} (p \| q)]. It is defined by
+
+[stem]
+++++
+\text{JSD} (p \| q) = \frac{1}{2} D_{KL} (p \| m) + \frac{1}{2} D_{KL} (q \| m)
+++++
+
+where stem:[m = \frac{1}{2} (p+q)] is a mixture of stem:[p] and stem:[q]. JSD divergence is symmetric.
+
+
+
+
+

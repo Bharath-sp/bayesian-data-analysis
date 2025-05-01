@@ -1,0 +1,88 @@
+= Evidence Lower Bound =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+
+== What is Evidence Lower Bound? ==
+The Evidence Lower Bound (ELBO) is used as a loss function when doing variational inference. In Bayesian inference, most often the posterior distribution is intractable because of the normalization constant.
+
+[stem]
+++++
+p(\mathbf{w} \, | \, \mathcal{D}) = \frac{p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} )}{p(\mathcal{D})}
+++++
+
+Variational inference is a technique to approximate the actual posterior distribution with another distribution stem:[q(\mathbf{w} \mid \mathcal{D})]. We choose a stem:[q] for which we know the normalization constant and can obtain samples from it. So our goal is to approximate stem:[p(\mathbf{w} \, | \, \mathcal{D}) \approx q(\mathbf{w} \mid \mathcal{D})].
+
+Suppose the parameters associated with stem:[q] is stem:[\boldsymbol{\phi}]. We learn these parameters using an optimization procedure. As we know that an optimization procedure requires a loss function. We need to quantify the dissimilarity between two probability distributions stem:[p] and stem:[q]. To do this, we use KL divergence. We minimize the reverse KL divergence.
+
+[stem]
+++++
+D_{KL} (q \| p) = \mathbb{E}_{\mathbf{w} \sim q(\mathbf{w} \mid \mathcal{D})} \left[ \log \left[ \frac{q(\mathbf{w} \, | \, \mathcal{D})}{p(\mathbf{w} \, | \, \mathcal{D})} \right] \right]
+++++
+
+This is the KL divergence from stem:[q] to stem:[p]. But we cannot compute the denominator stem:[p(\mathbf{w} \, | \, \mathcal{D})].
+
+[stem]
+++++
+\begin{align*}
+D_{KL} (q \| p) & = \mathbb{E}_q \left[ \log \left[ \frac{q(\mathbf{w} \, | \, \mathcal{D})}{p(\mathbf{w} \, | \, \mathcal{D})} \right] \right] \\
+\\
+& = \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] - \mathbb{E}_q \left[ \log p(\mathbf{w} \, | \, \mathcal{D}) \right] \\
+\\
+& = \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] - \mathbb{E}_q \left[ \log \frac{p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} )}{p(\mathcal{D})} \right] \\
+\\
+& = \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] - \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} ) \right] +  \mathbb{E}_q  \left[ \log p(\mathcal{D}) \right] \\
+\\
+& = \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] - \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} ) \right] + \int_{\mathcal{W}} q(\mathbf{w} \, | \, \mathcal{D}) \log p(\mathcal{D})  \, d\mathbf{w}  \\
+\\
+& = \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] - \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} ) \right] + \log p(\mathcal{D}) \int_{\mathcal{W}} q(\mathbf{w} \, | \, \mathcal{D}) \, d\mathbf{w}  \\
+\\
+& = \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] - \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} ) \right] + \log p(\mathcal{D}) \\
+\end{align*}
+++++
+
+The last term is the marginal log likelihood or log evidence. We cannot compute this term. On rewriting the equation
+
+[stem, id='eq_1']
+++++
+\begin{align}
+\log p(\mathcal{D}) = - \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] + \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} ) \right] + D_{KL} (q \| p)
+\end{align}
+++++
+
+We cannot compute the KL divergence, but we know that the KL divergence is always stem:[\geq 0]. Suppose we remove the KL divergence term, then the equality becomes inequality
+
+[stem]
+++++
+\begin{align*}
+\log p(\mathcal{D}) & \geq  - \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] + \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} ) \right] \\
+\end{align*}
+++++
+  
+This says that the marginal log likelihood would be at least this quantity. The quantity in the RHs is known as Evidence Lower Bound (ELBO) as it is the lower bound on the evidence.
+
+====
+If we could maximize the ELBO component, then indirectly we will be minimizing the KL divergence component for the equality in <<id_1, Equation 1>> with the marginal log likelihood to hold true.
+
+Thus, we can minimize the reverse KL divergence by maximizing the ELBO.
+====
+
+[stem]
+++++
+\begin{align*}
+\text{ELBO} & = - \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] + \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \, p(\mathbf{w} ) \right] \\
+\\
+& = - \mathbb{E}_q \left[ \log q(\mathbf{w} \, | \, \mathcal{D}) \right] + \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \right] +  \mathbb{E}_q \left[ \log p(\mathbf{w} ) \right] \\
+\\
+& = \mathbb{E}_q \left[ \log p(\mathcal{D} \, | \, \mathbf{w} ) \right] - \mathbb{E}_q \left[ \log \frac{q(\mathbf{w} \, | \, \mathcal{D})}{p(\mathbf{w} )} \right]
+\end{align*}
+++++
+
+Here the first term is known as the expected reconstruction error. And the second term is the KL divergence from stem:[q(\mathbf{w} \, | \, \mathcal{D})] (approximate posterior) to stem:[p(\mathbf{w})] (prior).
+
+NOTE: We could have just approximated with stem:[q(\mathbf{w})] instead of the conditional distribution stem:[q(\mathbf{w} \, | \, \mathcal{D})].
+
+Given the ELBO loss function, we need algorithms to learn stem:[q(\mathbf{w} \, | \, \mathcal{D})] that maximizes the ELBO. There are two algorithms: Expectation maximization and Variational Autoencoder.

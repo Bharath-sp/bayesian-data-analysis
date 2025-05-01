@@ -1,0 +1,165 @@
+= Variational Autoencoder =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Introduction ==
+In the standard autoencoder, the encoder reduces the dimensionality of the input stem:[\mathbf{x}] to produce a latent vector stem:[\mathbf{z}]. This is represented as a single point in the latent space. And the decoder reconstructs the original data stem:[\mathbf{x}] from this latent vector.
+
+In a Variational Autoencoder (VAE), the input data stem:[\mathbf{x}] is not represented as a single point in the latent space, but as a single probability distribution. It is assumed to be a multivariate normal distribution. The encoder outputs the mean and variance of this normal distribution.
+
+If the number of neurons in this output layer of the encoder is 4, then two means and two variances are output for a two-dimensional normal distribution. In this example, the MNIST image of the digit 5 is mapped to a two-dimensional normal distribution in the latent space. That is, any point in this area could be a latent representation of the digit 5. A latent vector located at the center of the distribution is most likely to be digit 5, and the further away from the center it is, the less likely it is to be digit 5.
+
+The decoder samples a point from this distribution and reconstructs the original input stem:[\mathbf{x}]. This can also be used to generate samples that resemble the original input.
+
+== VAE Architecture ==
+
+=== Encoder ===
+Input to the encoder is a data point stem:[\mathbf{x}]. It outputs the parameters of the latent distribution - the mean stem:[\boldsymbol{\mu}] and the variance (or log-variance stem:[\log \boldsymbol{\sigma}^2 ]) of a normal distribution for the given input data point. These parameters define the approximate the posterior distribution
+
+[stem]
+++++
+q_{\phi}(\mathbf{z} \mid \mathbf{x}) \sim \mathcal{N}(\boldsymbol{\mu}, \text{diag}(\boldsymbol{\sigma}^2))
+++++
+
+Here the NN implementation of the encoder has two branches, one for predicting stem:[\boldsymbol{\mu}] and another for stem:[\boldsymbol{\sigma}].
+
+image::.\images\vae_encoder_01.png[align='center', 400, 300]
+
+=== Decoder ===
+We sample stem:[\mathbf{z} \sim q_{\phi}(\mathbf{z} \mid \mathbf{x})]. The input to the decoder is the sampled latent vector stem:[\mathbf{z}]. And it outputs the parameters of the reconstructed data distribution stem:[p_{\theta}(\mathbf{x} \mid \mathbf{z})]. Depending upon the choice of likelihood model for stem:[\mathbf{x}], the output of the decoder varies.
+
+* For binary data: Decoder outputs parameters of a Bernoulli distribution stem:[p_{\theta}(\mathbf{x} \mid \mathbf{z}) = \text{Bernoulli}(\hat{\mathbf{x}})]. Ideally, we should sample from this distribution to get the reconstructed output stem:[\hat{\mathbf{x}}]. But in practice, we care only about the mean. That is, the reconstructed output is stem:[\hat{\mathbf{x}} = \hat{\mathbf{x}}] (which is the mean of the Bernoulli).
+
+* For continuous data: Decoder may output both mean and variance of a Gaussian distribution
++
+[stem]
+++++
+p_{\theta}(\mathbf{x} \mid \mathbf{z}) \sim \mathcal{N}(\hat{\mathbf{x}}; \boldsymbol{\mu}_{\theta}(\mathbf{z}), \text{diag}(\boldsymbol{\sigma}_{\theta}^2(\mathbf{z})))
+++++
++
+Ideally, we should sample from this distribution to get the reconstructed output stem:[\hat{\mathbf{x}}]. But in practice, we care only about the mean. That is, the reconstructed output is stem:[\hat{\mathbf{x}} = \boldsymbol{\mu}_{\theta}(\mathbf{z})].
+
+NOTE: As we are sampling from a distribution, we have stochasticity in the reconstruction.
+
+== Loss Function to Train VAE ==
+For the autoencoder model, we considered the L2 distance between the input and its reconstruction as the loss. In case of VAE, for each input stem:[\mathbf{x}_n], we maximize the expected value of returning stem:[\mathbf{x}_n].
+
+[stem]
+++++
+\mathbb{E}_{\mathbf{z} \sim q_{\phi}(\mathbf{z} \mid \mathbf{x}_n)} [ \log p_{\theta}(\mathbf{x}_n \mid \mathbf{z})]
+++++
+
+That is, the resulting distribution stem:[p_{\theta}(\mathbf{x} \mid \mathbf{z})] should have high likelihood for the input stem:[\mathbf{x}_n]. So, our objective is to maximize the log-likelihood stem:[\log p_{\theta}(\mathbf{x}_n \mid \mathbf{z})] (or, minimize the NLL). As stem:[\mathbf{z}] is sampled from a distribution, we maximize the expected log-likelihood.
+
+NOTE: Generative models are often trained with the objective of maximizing the likelihood of reconstructing the training data.
+
+But we have a problem with this objective function. For a given input stem:[\mathbf{x}_n], as the model tries to increase the likelihood stem:[p_{\theta}(\mathbf{x}_n \mid \mathbf{z})], it may memorize the inputs in the latent space. In such case, the latent space will be organized as:
+
+image::.\images\vae_loss_01.png[align='center', 400, 300]
+
+Instead of every point being mapped to a distribution, it will be mapped to a distribution stem:[q_{\phi}(\mathbf{z} \mid \mathbf{x}_1)] with variance 0. Essentially, it is the same as mapping every input to a point in the latent space. And when we sample, we always sample this single point. The same stem:[\mathbf{z}] will be passed through the decoder, resulting in the same decoded output with probability 1. That is, it puts all the density of stem:[p_{\theta}(\mathbf{x} \mid \mathbf{z})] at stem:[\mathbf{x}_n] and 0 for other stem:[\mathbf{x}]'s.
+
+In such case, the latent space may not be well-organized, i.e., the input points may not be well represented or well clustered in the latent space. Similar inputs may get different representations in the latent space. For example, two images of 1 will be mapped to  points far apart in the latent space. Our objective is to 
+
+* Have semantically meaningful points close to each other in the latent space. Close points in the latent space should not give two completely different contents once decoded.
+
+* Map every input point to a distribution in the latent space.
+
+* The latent space should be complete. In the image above, the gap between the mapped distributions are meaningless. Samples stem:[\mathbf{z}] from those regions do not give any meaningful output when decoded.
+
+* The latent space should be continuous (ensure smoothness). Suppose a point stem:[\mathbf{z}_1] in the latent space maps to image 1 when decoded. Then, nearby points, say stem:[\mathbf{z}_1 + \boldsymbol{\delta}] and stem:[\mathbf{z}_1 - \boldsymbol{\delta}] should give outputs similar to 1. The patterns shouldn't vary suddenly, the change should be smooth. This ensures smooth transition of the decoded outputs when we move sampling from one cluster to the other in the latent space. This is required to generate meaningful variations of the reconstructed output (objective of the generative model).
+
+image::.\images\vae_loss_02.png[align='center', 400, 300]
+
+Say we have only triangles, circles, and squares in the training data. In the above irregular space, two close points are reconstructing different patterns when decoded. And also a sample from the meaningless region (in the center) is giving us a out-of-distribution pattern when decoded.
+
+To ensure continuity and complete representations of the latent space, we force the distribution stem:[q_{\phi}(\mathbf{z} \mid \mathbf{x}_n)] to be close to a standard distribution (e.g., Gaussian). So, the loss function will be
+
+
+[stem, id='eq_1']
+++++
+\begin{align}
+l_n(\theta, \phi) = - \mathbb{E}_{\mathbf{z} \sim q_{\phi}(\mathbf{z} \mid \mathbf{x}_n)} [ \log p_{\theta}(\mathbf{x}_n \mid \mathbf{z})] + \text{KL} \left( q_{\phi}(\mathbf{z} \mid \mathbf{x}_n) \, || \, p(\mathbf{z}) \right)
+\end{align}
+++++
+
+where stem:[p(\mathbf{z})] can be stem:[\mathcal{N}(\mathbf{0}, \mathbf{I})].
+
+The first term promotes reconstruction, and the second term keeps encoding in the latent space continuous. The objective is to minimize this loss function.
+
+== Reparameterization Trick ==
+In this architecture, the latent vector stem:[\mathbf{z}] is not deterministic, it is a random variable. It is sampled stem:[\mathbf{z} \sim q_{\phi}(\mathbf{z} \mid \mathbf{x})]. Sampling is non-differentiable, which blocks the flow of gradients to stem:[\boldsymbol{\mu}] and stem:[\boldsymbol{\sigma}^2] during the backpropagation process. That is, we cannot compute the gradient of the loss function with respect to the encoder's output stem:[\boldsymbol{\mu}] and stem:[\boldsymbol{\sigma}^2]. This causes the encoder's parameters not to be updated.
+
+NOTE: We typically compute stem:[\frac{\partial L}{\partial \boldsymbol{\mu}} = \frac{\partial L}{\partial \mathbf{z}} \cdot \frac{\partial \mathbf{z}}{\partial \boldsymbol{\mu}}]. In this case, we cannot compute the stem:[\frac{\partial \mathbf{z}}{\partial \boldsymbol{\mu}}] term as stem:[\mathbf{z}] is not related to stem:[\boldsymbol{\mu}] through a mathematical relation. Similarly, we face problem computing stem:[\frac{\partial L}{\partial \boldsymbol{\sigma}^2}].
+
+To solve this, we introduce a reparameterization trick:
+
+[stem]
+++++
+\mathbf{z} = \boldsymbol{\mu} + \sqrt{\boldsymbol{\sigma}^2} \odot \boldsymbol{\epsilon}, \text{ where } \boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})
+++++
+
+For example, we sample stem:[\epsilon_1] and stem:[\epsilon_2] from stem:[\mathcal{N}(0,1)]. And we compute the latent vector stem:[\mathbf{z}] using
+
+[stem]
+++++
+\begin{align*}
+z_1 & = \mu_1 + \sqrt{\sigma_1^2} * \epsilon_1 \\
+z_2 & = \mu_2 + \sqrt{\sigma_2^2} * \epsilon_2 \\
+\end{align*}
+++++
+
+where stem:[\mu_1, \mu_2, \sigma_1^2, \sigma_2^2] are encoder's output.
+
+The latent vector stem:[\mathbf{z}] computed in this way us similar to that sampled from stem:[\mathcal{N}(\boldsymbol{\mu}, \text{diag}(\boldsymbol{\sigma}^2))]. Now stem:[\mathbf{z}] is a deterministic function of stem:[\boldsymbol{\mu}], stem:[\boldsymbol{\sigma}^2] and a noise variable stem:[\boldsymbol{\epsilon}]. Since stem:[\boldsymbol{\epsilon}] is independent of the model parameters, we can differentiate the loss with respect to stem:[\boldsymbol{\mu}] and stem:[\boldsymbol{\sigma}^2].
+
+Suppose the parameters of the output layer of the encoders are stem:[\mathbf{w}_{\mu}] and stem:[\mathbf{w}_{\sigma}]. And let's the input to the encoder's output layer be stem:[\mathbf{u}] and stem:[\mathbf{v}]. Then, the output of the encoder layer can be given as
+
+[stem]
+++++
+\begin{align*}
+\mathbf{z} & = \mathbf{w}_{\mu} \mathbf{u} + \mathbf{w}_{\sigma} \mathbf{v} \odot \boldsymbol{\epsilon} \\
+& = \boldsymbol{\mu} + \sqrt{\boldsymbol{\sigma}^2} \odot \boldsymbol{\epsilon}
+\end{align*}
+++++
+
+Now the latent vector stem:[\mathbf{z}] is represented as parameters of the network.
+
+The reparameterization trick is applied to enable backpropagation through the stochastic sampling step by expressing the latent variable 
+stem:[\mathbf{z}] as a differentiable function of the encoder outputs. This allows the computation of gradients of the loss function with respect to stem:[\boldsymbol{\mu}] and stem:[\boldsymbol{\sigma}^2], which are the outputs of the encoder.
+
+CAUTION: If the encoder outputs log variance stem:[\log \boldsymbol{\sigma}^2], then the reparameterization is stem:[\mathbf{z} = \boldsymbol{\mu} + \text{exp}(\frac{1}{2} \log \boldsymbol{\sigma}^2) \odot \boldsymbol{\epsilon}].
+
+== Generation with VAE ==
+The key advantage of a variational autoencoder is its generative capability, i.e., it can generate new samples that are similar to the original data. The encoder models stem:[q(\mathbf{z} \mid \mathbf{x}_n)] over the latent variable, and the decoder models stem:[p(\mathbf{x} \mid \mathbf{z})] (the conditional probability distribution of the input data) over the input variable. Both encoder and decoder output a distribution.
+
+Once the training is completed, we can remove the encoder block and keep only the decoder block. If the training is good, for a given input stem:[\mathbf{x}_n], the distribution stem:[q(\mathbf{z} \mid \mathbf{x}_n)] will be similar to stem:[p(\mathbf{z})], which is the prior on stem:[\mathbf{z}] and most often it is stem:[\mathcal{N}(\mathbf{0}, \mathbf{I})]. This is true for any input stem:[\mathbf{x}_n]. During training, the encoder has projected all the input points into stem:[\mathcal{N}(\mathbf{0}, \mathbf{I})] in a continuous and complete way.
+
+So, we simply
+
+* Sample from the prior stem:[p(\mathbf{z})].
+* Pass it to the decoder to get meaningful new samples.
+
+*Moving in the latent space:*
+
+Interpolate between two points in the latent space and visualize. We can select points that are convex combinations of two points in the latent space stem:[\mathbf{z}_1] and stem:[\mathbf{z}_2] and pass them to the decoder to observe the variations and transition. Smooth transition in the generated image is a sign of a good model.
+
+*Vector Arithmetic:* We can also do some vector arithmetic in the latent space and observe the generated images.
+
+*Role Identification:*
+
+We can even manipulate a particular entry of the sampled latent vector stem:[\mathbf{z}] (by keeping all others fixed) and see the variations in the decoded output. This helps us understand the role of each component of the latent vector. Once we understand the role of each component, we can generate a more controlled output. In practice, it is very difficult to achieve this as a subset of components may be responsible for a particular change/variation in the decoded output.
+
+This framework can also be used to generate data similar to a particular input data. For example, if we want to generate new images similar to digit 5:
+
+. We first input the digit 5 into the encoder and find the corresponding stem:[\boldsymbol{\mu}] and stem:[\boldsymbol{\sigma}^2]. For a given input stem:[\mathbf{x}], we get unique stem:[\boldsymbol{\mu}] and stem:[\boldsymbol{\sigma}^2].
+. Randomly sample stem:[\epsilon_1] and stem:[\epsilon_2] from stem:[\mathcal{N}(0,1)].
+. Obtain a latent vector stem:[\mathbf{z} = \boldsymbol{\mu} + \sqrt{\boldsymbol{\sigma}^2} \odot \boldsymbol{\epsilon}].
+. Feed stem:[\mathbf{z}] into the decoder to generate new images that resembles the digit 5.
+. Repeat step 2,3 and 4 to generate multiple images that resemble digit 5.
+ 
+
+

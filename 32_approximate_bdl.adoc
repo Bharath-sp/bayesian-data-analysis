@@ -1,0 +1,45 @@
+= Tools for Bayesian DL =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+Probabilistic Neural Network models are very complex, implementing them is not very straightforward. Can we use the common paradigms in deep learning to develop probabilistic NN models? Yes, with relatively minor tweaks, we can easily adapt large, sophisticated architectures to produce high-quality uncertainty estimates.
+
+There are three key approaches for facilitating model uncertainty estimation with common deep learning frameworks:
+
+* Introducing approximate Bayesian inference via dropout.
+* Using ensembles for model uncertainty estimates.
+* Adding a Bayesian layer to our model, allowing any model to produce uncertainty estimates.
+
+== Approximate Bayesian inference via dropout ==
+Dropout is traditionally used to prevent overfitting an NN, it is one of the most widely used regularization methods. The idea of dropout is to randomly turn off (or drop) certain units of a neural network during training. Because of this, the model cannot solely rely on a particular small subset of neurons to solve the task it was given. Instead, the model is forced to find different ways to solve its task. This improves the robustness of the model and makes it less likely to overfit.
+
+Dropout is typically available as a standalone layer in all standard neural network libraries. We typically add it after the activation function. How can we use this dropout layer for Bayesian inference? The idea is as follows:
+
+. We use dropout during test time.
+. Instead of running inference once, we run it many times (for example, 30-100 times).
+. We then average the predictions to get our uncertainty estimates.
+
+Since we drop the units randomly, this is called Monte Carlo (MC) dropout. Using dropout forces the model to learn different ways to solve its task. So, when we keep dropout enabled during inference, we use slightly different networks that all process the input via a slightly different path through the model. This diversity is helpful when we want a calibrated uncertainty score.
+
+image::.\images\bdl_mc_dropout.png[align='center', 400, 300]
+
+For each input, instead of predicting a point estimate (a single value), the network now produces a distribution of values (made up of multiple forward passes). We can use this distribution to compute a mean and variance associated with each input data point.
+
+We can also interpret this MC dropout in a Bayesian way. Using these slightly different networks with dropout can be seen as sampling from a distribution of all possible models: the posterior distribution over all of the parameters (or weights) of our network, stem:[p(\boldsymbol{\theta} \mid \mathcal{D})].
+
+== Using Ensembles ==
+A common strategy in machine learning is to combine several single models into a committee of models. The process of learning such a combination of models is called ensemble learning, and the resulting committee of models is called an ensemble.
+
+Ensemble learning involves two main components:
+
+* The different single models need to be trained. There are various strategies to obtain different models from the same training data: the models can be trained on different subsets of data, we can train different model types or models with different architectures, or we can initialize the same model types with different hyperparameters.
+
+* The outputs of the different single models need to be combined. Common strategies for combining the predictions of single models are simply taking their average or taking a majority vote among all members of the ensemble. More advanced strategies are taking a weighted average or, if more training data is available, learning an additional model to combine the different predictions of the ensemble members.
+
+Ensembles will perform better than single models if there is enough diversity among the predictions of ensemble members. Diversity here means that different ensemble members make different mistakes on a given data sample.
+
+== Bayesian Last-Layer Methods ==
+The fundamental principle behind Bayesian Last-Layer (BLL) methods is to estimate uncertainties only at the last-layer. 

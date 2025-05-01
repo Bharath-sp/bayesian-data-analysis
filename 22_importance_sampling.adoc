@@ -1,0 +1,105 @@
+= Importance Sampling =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Procedure ==
+One reason for wishing to sample from complicated probability distributions is to evaluate expectations of the form
+
+[stem, id='eq_1']
+++++
+\begin{align}
+\mathbb{E}[f] = \int f(\mathbf{z}) p(\mathbf{z}) d\mathbf{z}
+\end{align}
+++++
+
+The technique of importance sampling provides a framework for approximating expectations directly but does not itself provide a mechanism for drawing samples from a distribution stem:[p(\mathbf{z})].
+
+In Bayesian settings, stem:[p(\mathbf{z})] is the posterior and it cannot be computed in a closed form. Therefore, the expectation is intractable to compute in many situations. As an approximation, we obtain a set of samples stem:[\mathbf{z}^{(i)}] (where stem:[i=1,\dots, L]) drawn independently from the distribution stem:[p(\mathbf{z})]. This allows the expectation to be approximated by a finite sum:
+
+[stem]
+++++
+\bar{f} = \frac{1}{L} \sum_{i=1}^L f(\mathbf{z}^{(i)})
+++++
+
+This finite sum approximation depends on being able to draw samples from the distribution stem:[p(\mathbf{z})]. Suppose that it is impractical to sample directly from stem:[p(\mathbf{z})] but that we can evaluate stem:[p(\mathbf{z})] easily for any given value of stem:[\mathbf{z}].
+
+What if we can convert the expectation in <<eq_1, Equation 1>> which is respect to stem:[p(\mathbf{z})] to an expectation with respect to some simple distribution stem:[q(\mathbf{z})]? We can write 
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}[f] & = \int f(\mathbf{z}) p(\mathbf{z}) d\mathbf{z} \\
+& = \int f(\mathbf{z}) \frac{p(\mathbf{z})}{q(\mathbf{z})} q(\mathbf{z}) \, d\mathbf{z} \\
+& \simeq \frac{1}{L} \sum_{i=1}^L \frac{ p(\mathbf{z}^{(i)}) }{ q(\mathbf{z}^{(i)}) } f(\mathbf{z}^{(i)})
+\end{align*}
+++++
+
+where stem:[\simeq] stands for "asymptotically equal to". We have expressed the expectation in the form of a finite sum over samples stem:[\{\mathbf{z}^{(i)} \}] drawn from stem:[q(\mathbf{z})] instead from stem:[p(\mathbf{z})]. That is, samples are drawn from a simpler distribution and it is weighted by the ratio
+
+[stem]
+++++
+r_i = \frac{ p(\mathbf{z}^{(i)}) }{ q(\mathbf{z}^{(i)}) }
+++++
+
+This quantity stem:[r_i] is known as *importance weights* as they represent the importance given to each sample drawn. They also correct the bias introduced by sampling from the wrong distribution. Note that, unlike rejection sampling, all the samples generated are retained.
+
+image::.\images\importance_samp_01.png[align='center', 300, 300]
+
+Often the distribution stem:[p(\mathbf{z})] can be evaluated only up to a normalization constant, so that stem:[p(\mathbf{z}) = \frac{1}{Z_p} \tilde{p}(\mathbf{z})] where stem:[\tilde{p}(\mathbf{z})] can be evaluated easily and stem:[Z_p] is unknown.
+
+Similarly, we may wish to use write the proposal distribution as stem:[q(\mathbf{z}) = \frac{1}{Z_q} \tilde{q}(\mathbf{z})] where stem:[\tilde{q}(\mathbf{z})] can be evaluated easily and we might know stem:[Z_q] as well. We then have
+
+[stem, id='eq_2']
+++++
+\begin{align}
+\mathbb{E}[f] & = \int f(\mathbf{z}) p(\mathbf{z}) d\mathbf{z} \nonumber \\
+& = \frac{Z_q}{Z_p} \int f(\mathbf{z}) \frac{\tilde{p}(\mathbf{z})}{\tilde{q}(\mathbf{z})} q(\mathbf{z}) \, d\mathbf{z} \nonumber \\
+& \simeq \frac{Z_q}{Z_p} \frac{1}{L} \sum_{i=1}^L \tilde{r}_i f(\mathbf{z}^{(i)})
+\end{align}
+++++
+
+where stem:[\tilde{r}_i = \tilde{p}(\mathbf{z}^{(i)}) \, / \, \tilde{q}(\mathbf{z}^{(i)}) ]. We can use the same sampled set (from stem:[q(\mathbf{z})]) to evaluate the ratio
+
+[stem]
+++++
+\begin{align*}
+Z_p & = \int \tilde{p}(\mathbf{z}) d \mathbf{z} \\
+\frac{Z_p}{Z_q} & = \frac{1}{Z_q} \int \tilde{p}(\mathbf{z}) d \mathbf{z} = \int \frac{\tilde{p}(\mathbf{z})}{\tilde{q}(\mathbf{z})} q(\mathbf{z}) d \mathbf{z} \\
+& \simeq \frac{1}{L} \sum_{i=1}^L \tilde{r}_i
+\end{align*}
+++++
+
+Hence, the expectation <<eq_2, Equation 2>> can be given by a weighted sum:
+
+[stem]
+++++
+\mathbb{E}[f] \simeq \sum_{i=1}^L w_i \, f(\mathbf{z}^{(i)})
+++++
+
+where
+
+[stem,  id='eq_3']
+++++
+\begin{align}
+w_i = \frac{\tilde{r}_i}{\sum_m \tilde{r}_m} = \frac{\tilde{p}(\mathbf{z}^{(i)}) \, / \, \tilde{q}(\mathbf{z}^{(i)})}{\sum_m \tilde{p}(\mathbf{z}^{(m)}) \, / \, \tilde{q}(\mathbf{z}^{(m)})}
+\end{align}
+++++
+
+Note that stem:[\{w_i\}] are non-negative numbers that sum to one. So essentially, we are sampling from stem:[q(\mathbf{z})] and taking the weighted combination of stem:[f(\mathbf{z}^{(i)})] to compute stem:[\mathbb{E}[f\]].
+
+As with rejection sampling, the success of importance sampling depends crucially on how well the sampling distribution stem:[q(\mathbf{z})] matches the desired distribution stem:[p(\mathbf{z})]. A key requirement for the sampling distribution stem:[q(\mathbf{z})] is that it should not be small or zero in regions where stem:[p(\mathbf{z})] may be significant.
+
+== Sampling Importance Resampling ==
+This technique is a variant of importance sampling. There are two stages to this scheme:
+
+. In the first stage, stem:[L] samples stem:[\mathbf{z}^{(1)}, \dots, \mathbf{z}^{(L)}] are drawn from stem:[q(\mathbf{z})].
+. Then in the second stage, weights stem:[w_1, \dots, w_L] are calculated using <<eq_3, Equation 3>>.
+. Finally, a second set of stem:[L] samples is drawn from the discrete distribution stem:[(\mathbf{z}^{(1)}, \dots, \mathbf{z}^{(L)})] with probabilities given by the weights stem:[(w_1, \dots, w_L)].
+
+The resulting stem:[L] samples (from resampling) are only approximately distributed according to stem:[p(\mathbf{z})] but the distribution becomes correct in the limit stem:[L \to \infty].
+
+
+

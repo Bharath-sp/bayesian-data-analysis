@@ -1,0 +1,69 @@
+= Rejection Sampling =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+:figure-caption!:
+
+== Procedure ==
+The rejection sampling framework allows us to sample from relatively complex distributions. The core idea is that we obtain samples from a simple distribution, and then we reject some samples to get samples from a more complex distribution.
+
+Suppose we wish to sample from a distribution stem:[p(z)] that is not one of the simple, standard distributions and that sampling directly from stem:[p(z)] is difficult. Furthermore suppose that we are easily able to evaluate stem:[p(z)] for any given value of stem:[z], up to some normalizing constant stem:[Z_p], so that
+
+[stem]
+++++
+p(z) = \frac{1}{Z_p} \tilde{p}(z)
+++++
+
+where stem:[\tilde{p}(z)] (unnormalized posterior in Bayesian setting) can readily be evaluated, but stem:[Z_p] is unknown and cannot be computed in a closed form. In Bayesian settings, we are eventually interested in sampling from this posterior distribution.
+
+[stem]
+++++
+p(z) = \frac{p(\mathcal{D} \mid z) \, \bar{p}(z)}{Z_p} \text{ where }  \bar{p}(z) \text{ is the prior}
+++++
+
+CAUTION: stem:[\tilde{p}(z)] also has some complex form. It is not an unnormalized version of simple distributions.
+
+To obtain samples from stem:[p(z)], we propose 
+
+* A simple distribution stem:[q(z)] from which from which we can readily draw samples. This distribution is known as a proposal distribution.
+* We next introduce a constant stem:[k] whose value is chosen such that stem:[k q(z) \geq \tilde{p}(z) ] for all values of stem:[z]. The function stem:[k q(z)] is called the comparison function or scaled distribution.
+
+image::.\images\rejection_sampling_01.png[align='center', 400, 200]
+
+Each step of the rejection sampler involves generating two random numbers.
+
+. First, we generate a number stem:[z_0] from the distribution stem:[q(z)].
+. Next, we generate a number stem:[u_0] from the uniform distribution over stem:[[0, kq(z_0)\]]. This pair of random numbers stem:[(z_0, u_0)] (all possible stem:[z_0] and stem:[u_0]) has uniform distribution under the curve of the function stem:[kq(z)].
+. If stem:[u_0 > \tilde{p}(z_0)], then the sample is rejected, otherwise stem:[u_0] is retained. Thus, the pair is rejected if it lies in the grey shaded region. The intuition is that we should reject more samples from the region where stem:[\tilde{p}(z)] is low, and reject less samples from the region where stem:[\tilde{p}(z)] is high.
++
+stem:[z] are sampled from stem:[q(z)], and then these samples are *accepted with probability* stem:[\frac{\tilde{p}(z)}{kq(z)}], which is the ratio of the value of stem:[\tilde{p}(z)] to the value of stem:[kq(z)] for any given stem:[z]. And reject it with a probability of stem:[1-\frac{\tilde{p}(z)}{kq(z)}].
++
+[stem]
+++++
+\begin{align*}
+p(\text{accept} \, | \, z) & = \frac{\tilde{p}(z)}{kq(z)} \\
+p(\text{accept}) & = \int \frac{\tilde{p}(z)}{kq(z)} q(z) dz = \frac{1}{k} \int \tilde{p}(z) dz
+\end{align*}
+++++
++
+If stem:[k] is large, the probability of acceptance is low. Therefore stem:[k] should be as small as possible subject to the constraint that stem:[k q(z) \geq \tilde{p}(z)] at all stem:[z]. And we always consider a proposal distribution with high variance to cover the entire support of the unnormalized posterior.
+
+After this process, the remaining pairs then have uniform distribution under the curve of stem:[\tilde{p}(z)]. The corresponding stem:[z] values are distributed according to stem:[p(z)], as desired. That is, we get more samples from the region where the density of stem:[\tilde{p}(z)] is high, and less samples from the region where the density is low. As stem:[\tilde{p}(z) \propto p(z)], the values are distributed according to stem:[p(z)].
+
+== How to choose stem:[k] ==
+
+One way to choose stem:[k] is to find the mode of stem:[\tilde{p}(z)], stem:[z_{\text{MAP}}], and solve for stem:[k] at that mode. That is,
+
+[stem]
+++++
+kq(z_{\text{MAP}}) = \tilde{p}(z_{\text{MAP}}) \implies k = \frac{\tilde{p}(z_{\text{MAP}})}{q(z_{\text{MAP}})}
+++++
+
+This doesn't always guarantee an optimal stem:[k]. Though this ensures stem:[k q(z) = \tilde{p}(z)] at the MAP estimate, but when we have considered a stem:[q(z)] with low variance, it may not ensure stem:[k q(z) \geq \tilde{p}(z)] at all other stem:[z].
+
+The disadvantage of this method is that it is very difficult to come up with the proposal distribution stem:[q(z)] and stem:[k] such that stem:[k q(z) \geq \tilde{p}(z) ] at all stem:[z]. If we are not able to come up with a good proposal distribution and small enough stem:[k], We end up rejecting a lot a of sampled values.
+
+== Adaptive Rejection Sampling ==
+There are a lot of variants to improve upon the rejection sampling, with a focus on coming up with better proposal distributions.
+Here we have the proposal distribution stem:[q(z)] which is a piece-wise linear function that can more accurately describe stem:[\tilde{p}(z)].

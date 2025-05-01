@@ -1,0 +1,65 @@
+= Hamiltonian Monte Carlo =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+The standard approaches to MCMC Bayesian estimation such as MH algorithm struggle to efficiently explore the joint distribution of the model parameters for high dimensional complex models. In high dimensional parameter space, it is difficult to find good proposals for MH. So, we end up having slow parameter space exploration and long run times. This makes us difficult to build the models.
+
+== What is HMC? ==
+The objective of sampling from a distribution is to get more samples from regions where the probability density is high and relatively less samples from regions where the density is low. Th at is, we want to sample each location (of the support) in exact proportion to its height.
+
+Suppose this is our unknown posterior distribution from which we would want to sample.
+
+image::.\images\hmc_01.png[align='center', 400, 300]
+
+The idea of the Hamiltonian Monte Carlo is to flip this density to get the inverse of the posterior density.  Then, imagine a fictitious particle moving over this inverse posterior space. We give a random kick to this particle and follow the path of this particle over time. Most often, the particle goes towards the bottom of this landspace due to gravity. The particle will visit those areas of low density more often than those areas of high density (in the inverse posterior space). This corresponds exactly to generating more samples from the high density region and less samples from the low density region as per our actual posterior distribution.
+
+=== Statistical Mechanics ===
+The probability that the particle exists in any particular energy state is
+
+[stem]
+++++
+P(E_i) \propto e^{-\frac{E_i}{T}}
+++++
+
+where stem:[T] is the temperature. If stem:[T] is small, then decay rate will be very fast.
+
+In HMC, we imagine that the system actually has an energy level and the system's enerygy depends on two things:
+
+. The parameter value stem:[\boldsymbol{\theta}] which corresponds to the position of the particle.
+. The momentum of the particle with which it is sliding over the space stem:[\mathbf{M}].
+
+Energy is the sum of two terms: gravitational potential energy stem:[U] and kinetic energy stem:[K] of the particle.
+
+[stem]
+++++
+E(\boldsymbol{\theta}, \mathbf{M}) = U(\boldsymbol{\theta}) + K(\mathbf{M})
+++++
+
+
+Suppose the parameters of our models are stem:[(w_1, \dots, w_D)]. We have a stem:[D-] dimensional parameter space. We augment this stem:[D-] dimensional parameter space with stem:[D] additional momentum variables stem:[m_1, \dots, m_D].
+
+Hamiltonian mechanics or equations for this dynamic system are
+
+[stem]
+++++
+\begin{align*}
+\end{align*}
+++++
+
+HMC sampling defines a Hamiltonian function in terms of the
+
+. the target distribution from which we desire samples - the potential energy.
+. A kinetic energy term parameterized by a set of "momentum" auxiliary variables.
+
+Based on simple updates to the momentum variables, one simulates from a Hamiltonian dynamical system that enables proposals of distant states. The target distribution is invariant under these dynamics; in practice, a discretization of the continuous-time system is needed necessitating a Metropolis-Hastings (MH) correction, though still with high acceptance probability.
+
+A limitation of HMC is the necessity to compute the gradient of the potential energy function in order to simulate the Hamiltonian dynamical system. Such computation is infeasible in problems involving a large sample size since the computations utilize the entire dataset. Instead, we can use a noisy estimate of the gradient computed from a minibatch (subset) of the data.
+
+These noisy gradient approximations are successful in optimization-based algorithms and a question is whether similar efficiencies can be garnered by sampling-based algorithms that maintain many desirable theoretical properties for Bayesian inference.
+
+In the paper "Stochastic Gradient Hamiltonian Monte Carlo", the authors explored the possibility of marrying the efficiencies in state space exploration of HMC with the big-data computational efficiencies of stochastic gradients.
+
+The natural implementation of the stochastic approximation can be arbitrarily bad. To address this problem, the authors introduced a variant that uses second-order Langevin dynamics with a friction term that counteracts the effects of the noisy gradient. This helps us maintain the constructed Markov chain to have the target distribution as its stationary distribution.

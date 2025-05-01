@@ -6,4 +6,122 @@
 :figure-caption!:
 
 == Introduction ==
-In the Laplace approximation, we approximated the posterior distribution as a Gaussian. There are other approximation techniques in which we approximate the posterior as other distributions or mixture of Gaussians, etc.
+In the Laplace approximation, we approximated the posterior distribution as a Gaussian. There are other approximate inference techniques (such as variational inference) in which we approximate the posterior as other distributions or mixture of Gaussians, etc.
+
+Another option is that, instead of approximating the posterior as a specific distributional form, we can try to obtain samples from the posterior because eventually we want to do prediction. Our end objective is to use this posterior distribution over the parameters to get the predictive posterior distribution for the test point stem:[\mathbf{x}^*]:
+
+[stem, id='eq_1']
+++++
+\begin{align}
+p(t^* \, | \, \mathbf{x}^*, \mathcal{X}, \mathcal{T}) & = \int p(t^* \, | \, \mathbf{x}^*, \mathbf{w}) \, p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T}) \, d\mathbf{w} \\
+& = \mathbf{E}_{p(\mathbf{w} \, | \, \mathcal{X}, \mathcal{T})}[p(t^* \, | \, \mathbf{x}^*, \mathbf{w})] \nonumber  \\
+& \approx \frac{1}{M} \sum_{i=1}^M p(t^* \, | \, \mathbf{x}^*, \mathbf{w}_i) \nonumber 
+\end{align}
+++++
+
+where stem:[\mathbf{w}_i] are samples from the posterior distribution. So we need ways to sample from the posterior. If the posterior distribution is simple such as a Gaussian or exponential, we can easily obtain samples using some transformation technique. If the posterior is complex, it is not very straight forward to obtain samples. There are various sampling techniques which help us obtain samples from such complex posterior distributions.
+
+== What is Sampling? ==
+The process of creating synthetic examples of a variable stem:[\mathbf{z}] from a probability distribution stem:[p(\mathbf{z})], where stem:[\mathbf{z}] is a random vector, is known as sampling. This is also known as Monte Carlo sampling. We will explore a variety of relatively simple strategies for generating random samples from a given distribution.
+
+CAUTION: Here we will assume that an algorithm has been provided that generates pseudo-random numbers distributed uniformly over stem:[(0,1)].
+
+In many situations, we may be interested to evaluate expectations with respect to the distribution stem:[p(\mathbf{z})]. Suppose we wish to find the expectation of a function of the random variable, stem:[f(\mathbf{z})], with respect to a probability distribution stem:[p(\mathbf{z})]. For continuous variables the expectation is defined by
+
+[stem, id='eq_2']
+++++
+\begin{align}
+\mathbb{E}[f] = \int f(\mathbf{z}) p(\mathbf{z}) d\mathbf{z}
+\end{align}
+++++
+
+where the integral is replaced by summation for discrete variables. Note the form <<eq_2, (2)>> is similar to that of the predictive posterior distribution form <<eq_1, (1)>>. For a single continuous variable stem:[z] case:
+
+image::.\images\sampling_exp_01.png[align='center', 300, 300]
+
+We will suppose that the expectation <<eq_2, (2)>> is too complex to be evaluated exactly using analytical techniques. So to approximate it, we can use sampling methods.
+
+The general idea behind sampling methods is to obtain a set of samples stem:[\mathbf{z}^{(i)}] (where stem:[i=1,\dots, M]) drawn independently from the distribution stem:[p(\mathbf{z})]. This allows the expectation <<eq_2, (2)>> to be approximated by a finite sum:
+
+[stem]
+++++
+\bar{f} = \frac{1}{M} \sum_{i=1}^M f(\mathbf{z}^{(i)})
+++++
+
+This is known as Monte Carlo approximation for expectation. In fact, this is an unbiased estimator of stem:[\mathbb{E}[f\]], i.e., stem:[\mathbb{E}[\bar{f}\] = \mathbb{E}[f(\mathbf{z})\]]. If we repeatedly take samples of size stem:[L] from the distribution stem:[p(\mathbf{z})], compute stem:[\bar{f}], and then average those, we would obtain stem:[\mathbb{E}[f(\mathbf{z})\]]. But how to obtain samples from a complex, unknown stem:[p(\mathbf{z})]?
+
+== Sampling from Standard Distributions ==
+Given samples from uniform distribution, the objective is to generate samples from the desired distribution. If the desired distribution is a standard distribution, we can use the inverse CDF transformation technique.
+
+Suppose that stem:[z \overset{i.i.d.}\sim \text{Unif}(0,1)] is uniformly distributed over the interval stem:[(0,1)], and that we transform the values of stem:[z] using some function stem:[g(.)] so that stem:[y = g(z)]. Our goal is to choose the function stem:[g(z)] such that the resulting values of stem:[y] have some specific desired distribution stem:[p(y)].
+
+In the inverse CDF transformation technique, we transform the uniformly distributed random numbers using a function that is the inverse of the CDF of the desired distribution. That is, stem:[g = h^{-1}], where stem:[h] is the CDF of the desired distribution.
+
+image::.\images\sampling_02.png[align='center', 300, 300]
+
+====
+If a uniformly distributed random variable stem:[z] is transformed using stem:[y = h^{-1}(z)], then stem:[y] will be distributed according to the desired distribution stem:[p(y)]. The inverse of the CDF (if it exists) is also always monotonically increasing.
+====
+
+For example, if the desired distribution stem:[p(y)] is
+
+* stem:[\text{Unif}(5,10)]: then stem:[y] should be stem:[5z + 5].
+* stem:[\text{Exp}(\lambda)]: that is, we want stem:[p(y) = \lambda e^{-\lambda y}]. The CDF of an exponential RV is stem:[h(y) = 1 - e^{-\lambda y}]. Then, the transformation should be stem:[y= - \frac{1}{\lambda} \ln (1-z)].
+* Let stem:[U_1, U_2 \overset{i.i.d.}\sim \text{Unif}(0,1)]. Let stem:[R = \sqrt{-2 \log(1-U_1)}] and stem:[\Theta = 2\pi U_2]. Then, stem:[X = R \cos (\Theta)] and stem:[Y = R \sin (\Theta)], where stem:[X,Y \overset{i.i.d.}\sim \mathcal{N}(0,1)].
+
+A simple transformation of uniformly distributed variable gives us samples from the desired distribution. This method can be used only when the CDF and its inverse can be computed analytically in a closed form.
+
+To sample from discrete distributions, we can use the same inverse CDF transformation technique or Gumbel softmax function where the discrete distribution is reparameterized by the Gumbel distribution (reparameterization or Gumbel softmax trick).
+
+=== Sampling from Gaussian Distribution ===
+We cannot compute the CDF of the Gaussian in a closed form. So we use Box-Muller method for generating samples from a Gaussian distribution.
+
+. Suppose we have two variables stem:[z_1, z_2 \overset{i.i.d.}\sim \text{Unif}(0,1)] distributed uniformly over stem:[(0,1)].
+
+. We generate pairs of uniformly distributed random numbers stem:[z_1, z_2 \in (-1,1)] by transforming these variables using stem:[z_1 \to 2z_1 -1] and stem:[z_2 \to 2z_2 -1]. This leads to a uniform distribution of points inside the square.
+
+image::.\images\box_muller.png[align='center', 150, 150]
+
+. Next we discard each pair unless it satisfies stem:[z_1^2 + z_2^2 \leq 1]. This leads to a uniform distribution of points inside the unit circle. The area of a unit circle is stem:[\pi]. The likelihood of generating a particular sample from this circle is stem:[p(z_1, z_2) = \frac{1}{\pi}] (this is the PDF of a uniform RV over the unit circle).
+
+. Then, for each pair stem:[(z_1, z_2)] sampled from this unit circle, we evaluate the quantities
++
+[stem]
+++++
+\begin{align*}
+y_1 & = z_1 \left( \frac{-2 \ln r^2}{r^2}  \right)^{\frac{1}{2}} \\
+y_2 & = z_2 \left( \frac{-2 \ln r^2}{r^2}  \right)^{\frac{1}{2}}
+\end{align*}
+++++
++
+where stem:[r^2 = z_1^2 + z_2^2]. Then the joint distribution of stem:[y_1] and stem:[y_2] is given by
++
+[stem]
+++++
+p(y_1, y_2) = \left[ \frac{1}{\sqrt{2 \pi}} \text{exp}(-y_1^2 / 2) \right] \left[ \frac{1}{\sqrt{2 \pi}} \text{exp}(-y_2^2 / 2) \right]
+++++
++
+This corresponds to a multivariate Gaussian whose mean is a zero vector and covariance matrix is an identity matrix, stem:[\mathcal{N}(\mathbf{0}, \textbf{I})]. So stem:[y_1] and stem:[y_2] are independent and each has a Gaussian distribution with zero mean and unit variance.
+
+This gives us samples stem:[\mathbf{y}] (vector valued variables) from stem:[\mathcal{N}(\mathbf{0}, \textbf{I})]. But we may want to sample from a Gaussian stem:[\mathcal{N}(\boldsymbol{\mu}, \boldsymbol{\Sigma})].
+
+image::.\images\sampling_03.png[align='center', 600, 400]
+
+The idea is to make use of the Cholesky decomposition of the covariance matrix, stem:[\boldsymbol{\Sigma} = \mathbf{LL}^\top]. Then, if stem:[\mathbf{y}] is a random vector whose components are independent and Gaussian distributed with zero mean and unit variance, then stem:[\mathbf{x} = \boldsymbol{\mu} + \mathbf{Ly}] will be Gaussian with mean stem:[\boldsymbol{\mu}] and covariance stem:[\boldsymbol{\Sigma}]. We can easily verify that
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}[X] & = \boldsymbol{\mu} + \mathbf{L} \mathbb{E}[Y] = \boldsymbol{\mu} \\
+\text{Cov}[X] & = \mathbb{E}\left[ (X - \mathbb{E}[X]) (X - \mathbb{E}[X])^\top  \right] \\
+& = \mathbb{E}\left[ (X - \boldsymbol{\mu}) (X - \boldsymbol{\mu})^\top  \right] \\
+& = \mathbb{E}\left[ \mathbf{Ly} \mathbf{L}^\top \mathbf{y}^\top  \right] \\
+& = \mathbf{L} \mathbb{E}[\mathbf{yy}^\top] \mathbf{L}^\top = \mathbf{LL}^\top = \boldsymbol{\Sigma}
+\end{align*}
+++++
+
+since stem:[\mathbf{L}] is a constant, we took it outside the expectation, and stem:[\mathbb{E}[\mathbf{yy}^\top\] = \mathbf{I}] (covariance of stem:[\mathbf{y}]).
+
+NOTE: For a single variable case, if stem:[y] has a Gaussian distribution with zero mean and unit variance, stem:[\mathcal{N}(0, 1)], then stem:[\mu + \sigma y] will have a Gaussian distribution with mean stem:[\mu] and variance stem:[\sigma^2].
+
+These transformation techniques depend for its success on the ability to calculate and then invert the CDF of the required distribution. Such operations are feasible only for a limited number of simple distributions, and so we must turn to alternative approaches in search of a more general strategy to sample from complex distributions. We consider two techniques called rejection sampling and importance sampling.

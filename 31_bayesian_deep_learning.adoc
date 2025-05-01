@@ -1,0 +1,144 @@
+= Bayesian Deep Learning =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+Bayesian Deep Learning (BDL) combines the strengths of both deep learning and traditional Bayesian inference.
+
+* Deep Neural Networks (DNNs) are capable of modelling given large amounts of data.
+* Bayesian inference is used to produce model uncertainty estimates.
+
+image::.\images\bayesian_dl_02.png[align='center', 500, 300]
+
+With BDL, the DNNs gain uncertainty estimates, and so can be implemented more robustly, and the Bayesian inference methods gain the scalability and high-dimensional non-linear representation learning of DNNs. In short, BDL uses the strengths from one method to address the weaknesses of the other.
+
+But as the model complexity increases, so does the computational cost of Bayesian inference - making certain methods for Bayesian inference (such as via sampling) intractable.
+
+== The ideal BNN ==
+A standard neural network comprises multiple layers. Each of these layers comprises a number of neurons - and these neurons comprise a multiplicative component (weight) and an additive component (bias). Each weight and bias parameter comprises a single parameter - or point estimate. For each parameter in our network, we'll choose the parameter that best describes the data. This often boils down to taking the mean - or expectation - of the candidate parameter values. Let's see what this may look like for a single parameter in a neural network:
+
+image::.\images\bayesian_dl_03.png[align='center', 500, 300]
+
+The table shows, for five example input values (first column), what the ideal parameter (second column) would be to obtain the target output value (fourth column). Because we need to find a single value that best maps our input data to our output data, we end up taking the expectation (or mean) of our ideal parameters. Our model needs to make this compromise in order to find a parameter value that best fits all five data points in the example.
+
+This is the compromise that is made with traditional deep learning. For every parameter of a deep learning model: parameter distributions are distilled down to point estimates, losing information in the process. In BDL, we are interested in harnessing the additional information from these parameter distributions, using it for more robust training and for the creation of uncertainty-aware models.
+
+BNNs models the distribution over neural network parameters. In the ideal case, the BNN would be able to learn any arbitrary distribution for every parameter in the network. At inference time, we would sample from the NN to obtain a distribution of output values. We would repeat this process until we have obtained a statistically sufficient number of samples from which we could assume a good approximation of our output distribution.
+
+And as we have the distribution over the parameters, BNNs would tell us how likely different parameter values are given the input data. In doing so, they would allow us to detect cases where our test data point deviates from the data distribution learned at training time, and to quantify the degree of this deviation. Model's uncertainties increases as data at inference deviates from training data.
+
+But a typical neural network can have millions of parameters. Performing sampling-based inference on such a network would be incredibly computationally intensive. Because of this intractability, BDL methods make use of various approximations in order to make uncertainty estimates possible with DNNs.
+
+== BDL Fundamentals ==
+The objective is to learn distribution for each neural network parameter. To be precise, in BNN, we are interested in learning two key probabilities:
+
+* The probability of the weights stem:[\mathbf{w}] given some data stem:[\mathcal{D}], stem:[p(\mathbf{w} \mid \mathcal{D} )].
+* The probability of some output stem:[\hat{y}] given some input stem:[\mathbf{x}], stem:[p(\hat{y} \mid \mathbf{x})].
+
+=== Gaussian Assumptions ===
+
+Obtaining these probabilities for arbitrary probability distributions would involve solving intractable integrals. Gaussian integrals, on the other hand, have closed-form solutions - making them a very popular choice for approximating distributions. So, it's common in BDL to assume that we can closely approximate the true underlying distribution of our weights with Gaussian distributions.
+
+Consider a single neuron in one of the layers. Suppose the output of the neuron is stem:[z = \beta x + \epsilon], where stem:[\beta] is the weight and stem:[\epsilon] is the bias. With a Bayesian approach, we turn these parameters into distributions
+
+[stem]
+++++
+\begin{align*}
+\beta & \sim \mathcal{N}(\mu_{\beta}, \sigma_{\beta}) \\
+\epsilon & \sim \mathcal{N}(\mu_{\epsilon}, \sigma_{\epsilon}) \\
+\end{align*}
+++++
+
+The learning process would now involve learning four parameters instead of two, as each Gaussian is described by two parameters. Doing this for each parameter in our neural network, we end up doubling the number of parameters we need to learn.
+
+image::.\images\bayesian_dl_04.png[align='center', 500, 300]
+
+=== Sources of Uncertainty ===
+
+We typically deal with uncertainties as scalar variables associated with a parameter or output. These variables represent the variation in the parameter. While they are just scalar variables, there are multiple sources contributing to their values. These sources of uncertainty fall into two categories:
+
+* *Aleatoric uncertainty*, otherwise known as observational uncertainty or data uncertainty, is the uncertainty associated with our inputs. It describes the variation in our observations, and as such is irreducible.
+
+* *Epistemic uncertainty*, otherwise known as model uncertainty, is the uncertainty that stems from our model. In the case of machine learning, this is the variance associated with the parameters of our model that does not stem from the observations, and is instead a product of the model, or how the model is trained.
++
+This epistemic uncertainty is very useful in practical applications: it gives us an indication of when we can trust our model, and when we should be cautious about our model's predictions. Unlike aleatoric uncertainty, epistemic uncertainty is reducible - if we give our model more data, the model will improve, and the epistemic uncertainty will approach the aleatoric uncertainty.
+
+It's crucial that the methods we develop can estimate the degree of epistemic uncertainty associated with their predictions. Some models allow us to obtain a good approximation of decomposition of the total uncertainty into epistemic and aleatoric components. Ensemble methods provide a particularly good illustrative example.
+
+Say we have an ensemble of stem:[M] models that produce the predictive posterior stem:[p(y \mid \mathbf{x}, \mathcal{D})]. For a given input, our prediction will have entropy:
+
+[stem]
+++++
+\begin{align*}
+H\left[ p(y \mid \mathbf{x}, \mathcal{D}) \right] & = H\left[ \mathbb{E}_{p(\boldsymbol{\theta} \mid \mathcal{D})} [p(y \mid \mathbf{x}, \boldsymbol{\theta})] \right] \\
+\\
+& \approx H \left[  \frac{1}{M} \sum_{m=1}^M  p(y \mid \mathbf{x}, \boldsymbol{\theta}^{m}) \right], \text{ where } \boldsymbol{\theta}^m \sim p(\boldsymbol{\theta} \mid \mathcal{D})
+\end{align*}
+++++
+
+This represents the entropy of the average prediction.
+
+. Each stem:[p(y \mid \mathbf{x}, \boldsymbol{\theta}^{m})] is a probability distribution over stem:[y] for the same input stem:[\mathbf{x}], but using different sampled parameters stem:[\boldsymbol{\theta}^m] from the posterior stem:[p(\boldsymbol{\theta} \mid \mathcal{D})].
+
+. We average these distributions
++
+[stem]
+++++
+\bar{p}(y \mid \mathbf{x}) =  \frac{1}{M} \sum_{m=1}^M  p(y \mid \mathbf{x}, \boldsymbol{\theta}^{m})
+++++
++
+This is called the ensemble predictive distribution.
+
+. Then, we compute the entropy stem:[H[\bar{p}(y \mid \mathbf{x})\]] of this averaged distribution, where
++
+[stem]
+++++
+H[\bar{p}(y \mid \mathbf{x})] =  - \sum_y \bar{p}(y \mid \mathbf{x}) \log \bar{p}(y \mid \mathbf{x}) \text{ or } - \int_y \bar{p}(y \mid \mathbf{x}) \log \bar{p}(y \mid \mathbf{x}) dy
+++++
++
+This represents the total predictive uncertainty. This quantity captures the total uncertainty in the model's prediction at input stem:[\mathbf{x}]. This includes both aleatoric and epistemic uncertainty.
+
+====
+In general, What does it mean to take entropy of a probability distribution?
+
+Entropy of a probability distribution measures the expected amount of "information" or "uncertainty" contained in the outcomes drawn from that distribution. It quantifies how much "surprise" we should expect on average when sampling from that distribution or How "spread out" the distribution is.
+
+* A high entropy distribution is very uncertain and spread out (e.g., uniform distribution).
+* A low entropy distribution is highly peaked and confident about a few outcomes (e.g., delta function or very narrow Gaussian).
+
+In simple words, entropy measures the average amount of uncertainty. If we have a predictive distribution over possible outputs (like stem:[p(y \mid \mathbf{x})]), its entropy tells us how confident your model is at that input.
+
+* High entropy ⇒ The model is unsure (the probabilities are spread out).
+* Low entropy ⇒ The model is confident (one class has high probability).
+
+Thus, in Bayesian deep learning (e.g., with ensembles, MC dropout, or posterior sampling), taking the entropy of the predictive distribution is a direct way to quantify the model's uncertainty.
+
+Imagine you ask a model, "What is the class for this input?"
+
+* If it answers: "Maybe A (30%), maybe B (30%), maybe C (40%)" — high entropy.
+* If it answers: "Definitely A (99%)" — low entropy.
+
+The entropy quantifies these differences numerically.
+====
+
+Because we're working with ensembles, we get an uncertainty estimate for each model. We can take the expectation of these uncertainty estimates:
+
+[stem]
+++++
+\mathbb{E}_{p(\boldsymbol{\theta} \mid \mathcal{D})} \left[ H[p(y \mid \mathbf{x}, \boldsymbol{\theta})] \right] \approx \frac{1}{M} \sum_{m=1}^M H[p(y \mid \mathbf{x}, \boldsymbol{\theta}^m)]
+++++
+
+This gives us our expected data uncertainty - an estimate of our aleatoric uncertainty. This is the average entropy of individual model predictions. This approximate measure of aleatoric uncertainty becomes more accurate as ensemble size increases. This is possible to estimate with the ensemble methods because of the way ensemble members learn from different subsets of data.
+
+We can use the expected data uncertainty to determine how much epistemic uncertainty is present in our total uncertainty. The total uncertainty in the model's prediction at input stem:[\mathbf{x}]:
+
+[stem]
+++++
+\underbrace{\mathbb{E}_{p(\boldsymbol{\theta} \mid \mathcal{D})} \left[ H[p(y \mid \mathbf{x}, \boldsymbol{\theta})] \right]}_{\text{Aleatoric}} + \underbrace{H\left[ \mathbb{E}_{p(\boldsymbol{\theta} \mid \mathcal{D})} [p(y \mid \mathbf{x}, \boldsymbol{\theta})] \right] - \mathbb{E}_{p(\boldsymbol{\theta} \mid \mathcal{D})} \left[ H[p(y \mid \mathbf{x}, \boldsymbol{\theta})] \right]}_{\text{Epistemic}}
+++++
+
+Simply subtract the aleatoric uncertainty from our total uncertainty to get the epistemic uncertainty.
+
+For non-ensemble methods, we just have the general predictive uncertainty (the combined aleatoric and epistemic uncertainty), which is suitable in most cases.

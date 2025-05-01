@@ -1,0 +1,19 @@
+= Bayesian GAN =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Generator Architecture ==
+The DCGAN architecture is given by
+
+image::.\images\bgan_generator_01.png[align='center', 600, 400]
+
+The transposed convolution layer has a weight tensor of shape (3, 3, 384, 512) - meaning it uses 384 filters, each one aggregating 512 input channels, via a stem:[3 \times 3] kernel. Total trainable parameters in this layer:
+
+[stem]
+++++
+3 \times 3 \times 512 \times 384+384=1,769,472
+++++
+
+image::.\images\bgan_generator_02.png[align='center', 300, 300]
